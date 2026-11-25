@@ -1,79 +1,200 @@
-// The screenshot scenes behind ?shot=start|play|end. Each one plays the real rules forward from a
-// fresh world for a fixed number of steps, steered by a simple autopilot (look ahead each way the
-// paddle could move, keep clear of blocks, chase the lowest coin when that is safe), so the frame
-// is what a short game really looks like and the same seed always gives the same frame.
-import { FIELD, PLAYER, STEP } from './config.js';
-import { EVENT_OVER, KIND_BLOCK } from './world.js';
-import { SCREEN_OVER, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
+// The screenshot scenes behind ?shot=rush|plating|results|title. Each builds a real shift with the
+// game's own rules and art, puts food where a busy cook would have it (the same seed always gives
+// the same frame), lets steam, flames and chop bits play out for a moment, and returns the scene.
+import { STEP } from './config.js';
+import { createRandom } from './random.js';
+import { createShift } from './shift.js';
+import { stationAt, tileCenter } from './kitchen-layout.js';
+import { addToCook } from './stations.js';
+import { addOrder } from './orders.js';
+import { emit, floatText, updateEffects } from './effects.js';
+import { ambientEffects, applyFeedback } from './feedback.js';
+import { facingStation } from './player.js';
 
-const START_SECONDS = 5;
-const PLAY_SECONDS = 26;
-const END_LIMIT_SECONDS = 600;
-/**
- * How far ahead, in seconds, the autopilot checks each way it could move: the play scene's pilot
- * looks well ahead and keeps all its lives; the end scene's looks only a moment ahead, so it is
- * caught out once the blocks speed up, as a hurried player is.
- */
-const HORIZON_PLAY = 0.7;
-const HORIZON_END = 0.25;
-const SAMPLE = 1 / 30;
-const DIRECTIONS = [0, -1, 1];
-/** Extra room, each side, it keeps between the paddle and a block. */
-const MARGIN = 10;
-
-/** Seconds until moving in `direction` (-1, 0, 1) runs the paddle into a block; Infinity when it never does. */
-function timeToHit(state, direction, horizon) {
-  const player = state.player;
-  for (let t = SAMPLE; t <= horizon; t += SAMPLE) {
-    const x = Math.min(FIELD.width - player.width, Math.max(0, player.x + direction * PLAYER.speed * t));
-    for (let index = 0; index < state.items.length; index += 1) {
-      const item = state.items[index];
-      if (!item.active || item.kind !== KIND_BLOCK) continue;
-      const y = item.y + item.speed * t;
-      if (y + item.height > player.y && y < player.y + player.height && item.x < x + player.width + MARGIN && item.x + item.width > x - MARGIN) return t;
-    }
-  }
-  return Infinity;
+function item(ing, state = 'raw', progress = 0) {
+  return { kind: 'item', ing, state, progress, cookTo: null };
 }
 
-/** Of the safe ways to move, the one toward the lowest coin (or the centre); else the one that is hit last. */
-function autopilot(state, horizon) {
-  const player = state.player;
-  let coin = null;
-  for (let index = 0; index < state.items.length; index += 1) {
-    const item = state.items[index];
-    if (item.active && item.kind !== KIND_BLOCK && (coin === null || item.y > coin.y)) coin = item;
-  }
-  const target = coin === null ? FIELD.width / 2 : coin.x + coin.width / 2;
-  const centre = player.x + player.width / 2;
-  const wanted = target > centre + 8 ? 1 : target < centre - 8 ? -1 : 0;
-  let best = wanted;
-  let bestTime = timeToHit(state, wanted, horizon);
-  for (let index = 0; index < DIRECTIONS.length && bestTime !== Infinity; index += 1) {
-    const time = timeToHit(state, DIRECTIONS[index], horizon);
-    if (time > bestTime) {
-      bestTime = time;
-      best = DIRECTIONS[index];
-    }
-  }
-  return best;
+function plate(...parts) {
+  return { kind: 'plate', items: parts.map((p) => item(...p.split(':'))) };
 }
 
-/**
- * Set `world` to the named scene (start, play or end; any other name is start) and return the
- * screen to draw over it and the best score to show.
- */
-export function stageShot(name, world) {
-  world.reset();
-  if (name !== 'play' && name !== 'end') {
-    for (let index = 0; index < START_SECONDS / STEP; index += 1) world.step(STEP, 0, true);
-    return { screen: SCREEN_TITLE, best: 0 };
+function at(state, c, r) {
+  return stationAt(state.kitchen, c, r);
+}
+
+/** Put an item in a cooking station at a given progress (1 and above is cooked). */
+function cook(state, c, r, ing, from, progress) {
+  const station = at(state, c, r);
+  const it = item(ing, from);
+  addToCook(station, it);
+  it.progress = progress;
+  if (progress >= 1) it.state = it.cookTo;
+  return it;
+}
+
+function setOrders(state, list) {
+  state.orders = [];
+  for (const [recipe, share] of list) {
+    const order = addOrder(state, recipe, share);
+    order.age = 5;
   }
-  const limit = name === 'end' ? END_LIMIT_SECONDS : PLAY_SECONDS;
-  const horizon = name === 'end' ? HORIZON_END : HORIZON_PLAY;
-  for (let index = 0; index < limit / STEP; index += 1) {
-    if (world.step(STEP, autopilot(world.state, horizon), false) & EVENT_OVER) break;
+  state.events = [];
+}
+
+function placeCook(state, c, r, fx, fy, dy = 0) {
+  const p = tileCenter(c, r);
+  state.player.x = p.x;
+  state.player.y = p.y + dy;
+  state.player.fx = fx;
+  state.player.fy = fy;
+  state.player.target = facingStation(state.player, state.kitchen);
+}
+
+/** Let the effects run for `seconds` without moving the clock of the shift itself. */
+function settle(state, seconds, perStep) {
+  const steps = Math.round(seconds / STEP);
+  for (let i = 0; i < steps; i += 1) {
+    state.events = [];
+    state.clock += STEP;
+    if (perStep) perStep(i);
+    applyFeedback(state);
+    ambientEffects(state, STEP);
+    updateEffects(state.fx, STEP);
   }
-  const over = world.state.lives === 0;
-  return { screen: over ? SCREEN_OVER : SCREEN_PLAY, best: world.state.score };
+  state.events = [];
+}
+
+/** A lived-in kitchen for the title screen background. */
+export function dressKitchen(state) {
+  cook(state, 1, 0, 'noodles', 'raw', 0.4);
+  cook(state, 1, 0, 'egg', 'raw', 0.4);
+  cook(state, 4, 0, 'rice', 'raw', 0.5);
+  cook(state, 7, 0, 'bun', 'raw', 0.3);
+  cook(state, 9, 0, 'chicken', 'chopped', 0.6);
+  at(state, 5, 3).held = plate('noodles:boiled', 'egg:boiled', 'scallion:chopped');
+  at(state, 3, 3).held = item('mango');
+  state.orders = [];
+  settle(state, 1.5);
+}
+
+function stageRush(seed) {
+  const state = createShift(2, createRandom(seed));
+  state.timeLeft = 74;
+  state.rushAnnounced = true;
+  state.banner = null;
+  state.coins = 236;
+  state.combo = 3;
+  state.bestCombo = 4;
+  state.served = 7;
+  setOrders(state, [
+    ['skewers', 0.17],
+    ['friedrice', 0.4],
+    ['dumplings', 0.55],
+    ['soup', 0.74],
+    ['bao', 0.93],
+  ]);
+  // The cooking line, all of it busy.
+  cook(state, 1, 0, 'noodles', 'raw', 0.62);
+  cook(state, 1, 0, 'egg', 'raw', 0.62);
+  cook(state, 2, 0, 'egg', 'raw', 1.15);
+  cook(state, 4, 0, 'rice', 'raw', 0.45);
+  cook(state, 4, 0, 'egg', 'raw', 0.45);
+  cook(state, 7, 0, 'pork', 'chopped', 0.3);
+  cook(state, 7, 0, 'bun', 'raw', 0.3);
+  cook(state, 8, 0, 'pork', 'chopped', 1.05);
+  cook(state, 8, 0, 'cabbage', 'chopped', 1.05);
+  cook(state, 9, 0, 'chicken', 'chopped', 1.62);
+  cook(state, 9, 0, 'mushroom', 'raw', 1.62);
+  // Counters: raw food waiting, a dish half-built, one ready to go.
+  at(state, 3, 0).held = item('egg');
+  at(state, 6, 0).held = item('pork', 'chopped');
+  at(state, 4, 3).held = item('scallion', 'raw', 0.55);
+  at(state, 5, 3).held = plate('noodles:boiled', 'scallion:chopped');
+  at(state, 6, 3).held = item('cabbage');
+  at(state, 7, 3).held = item('mango');
+  at(state, 3, 3).held = item('bun');
+  at(state, 11, 1).held = plate('pork:steamed', 'cabbage:steamed');
+  at(state, 11, 4).held = plate('chicken:grilled', 'mushroom:grilled');
+  at(state, 8, 6).held = item('rice');
+  placeCook(state, 4, 2, 0, 1, 14);
+  state.player.chopping = at(state, 4, 3);
+  const board = at(state, 4, 3);
+  settle(state, 1.4, (i) => {
+    if (i % 8 === 0) state.events.push({ type: 'chop', station: board, item: board.held });
+  });
+  const hatch = tileCenter(11, 2);
+  floatText(state.fx, hatch.x - 40, hatch.y - 20, '+46', '#ffd85e', 34, 1.4);
+  floatText(state.fx, hatch.x - 40, hatch.y + 20, 'Combo x3', '#ff9fd0', 22, 1.3);
+  emit(state.fx, state.random, 'spark', hatch.x - 10, hatch.y, 14, { colors: ['#ffd166', '#fff4b0'], speed: 120, life: 0.8, size: 8 });
+  updateEffects(state.fx, 0.12);
+  return { state, screen: 'play', ui: { time: 0 } };
+}
+
+function stagePlating(seed) {
+  const state = createShift(4, createRandom(seed));
+  state.timeLeft = 23;
+  state.rushAnnounced = true;
+  state.banner = null;
+  state.coins = 352;
+  state.combo = 5;
+  state.bestCombo = 5;
+  setOrders(state, [
+    ['shrimpsoup', 0.24],
+    ['stirfry', 0.46],
+    ['mango', 0.6],
+    ['bao', 0.78],
+    ['soup', 0.95],
+  ]);
+  cook(state, 5, 0, 'mushroom', 'chopped', 0.7);
+  cook(state, 5, 0, 'cabbage', 'chopped', 0.7);
+  cook(state, 5, 0, 'pork', 'chopped', 0.7);
+  cook(state, 2, 0, 'noodles', 'raw', 0.3);
+  cook(state, 7, 0, 'rice', 'raw', 0.85);
+  cook(state, 8, 0, 'bun', 'raw', 1.1);
+  cook(state, 8, 0, 'pork', 'chopped', 1.1);
+  cook(state, 10, 0, 'shrimp', 'raw', 2.4);
+  at(state, 5, 3).held = plate('bun:steamed');
+  at(state, 6, 3).held = item('mango', 'chopped');
+  at(state, 3, 3).held = item('noodles');
+  at(state, 9, 6).held = item('mushroom', 'raw', 0.3);
+  at(state, 7, 6).held = item('scallion', 'chopped');
+  state.player.held = plate('noodles:boiled', 'shrimp:grilled', 'scallion:chopped');
+  placeCook(state, 10, 2, 1, 0, 30);
+  settle(state, 1.6);
+  return { state, screen: 'play', ui: { time: 0 } };
+}
+
+function stageResults(seed) {
+  const state = createShift(2, createRandom(seed));
+  state.timeLeft = 0;
+  state.over = true;
+  state.banner = null;
+  state.coins = 287;
+  state.served = 9;
+  state.missed = 1;
+  state.tips = 74;
+  state.bestCombo = 6;
+  state.servedLog = ['soup', 'skewers', 'dumplings', 'friedrice', 'soup', 'bao', 'mango', 'dumplings', 'friedrice'];
+  state.orders = [];
+  cook(state, 4, 0, 'rice', 'raw', 0.5);
+  cook(state, 1, 0, 'noodles', 'raw', 0.5);
+  at(state, 5, 3).held = plate('rice:steamed', 'mango:chopped');
+  placeCook(state, 6, 4, 0, -1);
+  settle(state, 1.2);
+  return { state, screen: 'results', ui: { time: 2, age: 5, stars: 2, canAdvance: true, newUnlock: true } };
+}
+
+function stageTitle(seed) {
+  const state = createShift(0, createRandom(seed));
+  dressKitchen(state);
+  state.timeLeft = state.duration;
+  return { state, screen: 'title', ui: { time: 1.2, selected: 2, unlocked: 3, stars: [3, 2, 1] } };
+}
+
+export function stageShot(name, seed) {
+  if (name === 'plating') return stagePlating(seed);
+  if (name === 'results') return stageResults(seed);
+  if (name === 'title') return stageTitle(seed);
+  return stageRush(seed);
 }

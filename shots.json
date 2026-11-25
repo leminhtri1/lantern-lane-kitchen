@@ -1,5 +1,6 @@
 [
-  { "name": "1-start.jpg", "query": "?shot=start&seed=1" },
-  { "name": "2-play.jpg", "query": "?shot=play&seed=1" },
-  { "name": "3-end.jpg", "query": "?shot=end&seed=1" }
+  { "name": "1-rush.jpg", "query": "?shot=rush&seed=3" },
+  { "name": "2-plating.jpg", "query": "?shot=plating&seed=5" },
+  { "name": "3-results.jpg", "query": "?shot=results&seed=2" },
+  { "name": "4-title.jpg", "query": "?shot=title&seed=1" }
 ]

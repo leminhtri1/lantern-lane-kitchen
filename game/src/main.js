@@ -1,50 +1,46 @@
-// Boot and the one loop: input is read every frame, the world advances in fixed 1/60 s steps
-// (several in a slow frame, none in a fast one), and the renderer paints what is there. The game
-// moves between four screens: title, play, paused and game over.
+// Boot and the one loop. Input is read every frame, the shift advances in fixed 1/60 s steps, its
+// events become sounds, and the renderer paints. The game moves between four screens: title
+// (pick a night), play, paused (the recipe book) and results.
 //
-// ?seed=N fixes the falling pattern. ?shot=start|play|end (with &seed=N) stages that scene
-// instead of running the loop, paints it twice and sets window.__shotReady for a screenshot.
-import { BEST_KEY, LIVES, STEP } from './config.js';
+// ?seed=N fixes the order sequence. ?shot=<name>&seed=N stages a screenshot scene instead of
+// running the loop (see shots.js), paints it twice and sets window.__shotReady.
+import { STEP } from './config.js';
 import { createRandom } from './random.js';
-import { createWorld, EVENT_HIT, EVENT_OVER } from './world.js';
-import { ACTION_CONFIRM, ACTION_PAUSE, createInput } from './input.js';
-import { createRenderer, SCREEN_OVER, SCREEN_PAUSED, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
-import { stageShot } from './shots.js';
+import { NIGHTS } from './recipes.js';
+import { createShift, idleShift, NO_CONTROLS, stepShift } from './shift.js';
+import { starsFor, rushLevel } from './orders.js';
+import { createInput } from './input.js';
+import { createRenderer } from './render.js';
+import { createAudio } from './audio.js';
+import { loadProgress, saveProgress, unlockedNight } from './save.js';
+import { resultButtonRects, titleCardRects } from './screens.js';
+import { dressKitchen, stageShot } from './shots.js';
 
-/** The longest frame the loop catches up on; a longer stall (a hidden tab) is dropped, not replayed. */
 const MAX_FRAME = 0.25;
+const RESULTS_DELAY = 1.6;
 
 const params = new URLSearchParams(window.location.search);
 const shot = params.get('shot');
 const seedParam = Number.parseInt(params.get('seed') ?? '', 10);
-const seed = Number.isInteger(seedParam) ? seedParam : Math.floor(Math.random() * 4294967296);
+const fixedSeed = Number.isInteger(seedParam) ? seedParam : null;
 
 const canvas = document.getElementById('game');
 const status = document.getElementById('status');
-const world = createWorld(createRandom(seed));
 const renderer = createRenderer(canvas);
 
-function readBest() {
-  try {
-    return Number.parseInt(window.localStorage.getItem(BEST_KEY) ?? '0', 10) || 0;
-  } catch {
-    return 0;
-  }
+function announce(text) {
+  status.textContent = text;
 }
 
-function saveBest(value) {
-  try {
-    window.localStorage.setItem(BEST_KEY, String(value));
-  } catch {
-    // Storage can be off (private windows): the best score then lasts this visit only.
-  }
+function inside(p, r) {
+  return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
 }
 
 function runShot(name) {
-  const scene = stageShot(name, world);
+  const scene = stageShot(name, fixedSeed ?? 1);
   let painted = 0;
   function paint() {
-    renderer.draw(world.state, scene.screen, scene.best);
+    renderer.draw(scene);
     painted += 1;
     if (painted < 2) requestAnimationFrame(paint);
     else window.__shotReady = true;
@@ -53,80 +49,150 @@ function runShot(name) {
 }
 
 function runGame() {
-  const input = createInput(canvas);
-  let screen = SCREEN_TITLE;
-  let best = readBest();
+  const input = createInput(canvas, renderer.toLogical);
+  const audio = createAudio();
+  const progress = loadProgress();
+  const ui = { selected: 0, unlocked: 0, stars: progress.stars, time: 0, age: 0, canAdvance: false, newUnlock: false };
+  ui.unlocked = unlockedNight(progress);
+  ui.selected = ui.unlocked;
+  let screen = 'title';
+  let state = createShift(0, createRandom(7));
+  dressKitchen(state);
   let accumulator = 0;
   let last = performance.now();
+  let overFor = 0;
+  let pendingUse = false;
+  let pendingClicks = [];
 
-  // Screen readers (and anyone watching the page's text) hear the screen changes and each hit.
-  function announce(message) {
-    status.textContent = message;
-  }
-
-  function startGame() {
-    world.reset();
+  function startNight(index) {
+    state = createShift(index, createRandom(fixedSeed ?? Math.floor(Math.random() * 2 ** 31)));
+    screen = 'play';
     accumulator = 0;
-    screen = SCREEN_PLAY;
-    announce(`Playing. ${LIVES} lives.`);
+    overFor = 0;
+    audio.play('order');
+    announce(`Night ${index + 1}: ${NIGHTS[index].title}. The stall is open.`);
   }
 
-  function endGame() {
-    screen = SCREEN_OVER;
-    if (world.state.score > best) {
-      best = world.state.score;
-      saveBest(best);
-    }
-    announce(`Game over. Score ${world.state.score}. Best ${best}.`);
+  function toTitle() {
+    screen = 'title';
+    ui.unlocked = unlockedNight(progress);
+    ui.selected = Math.min(ui.selected, ui.unlocked);
+    state = createShift(0, createRandom(7));
+    dressKitchen(state);
+    announce('Lantern Lane Kitchen. Pick a night.');
   }
 
-  function handleActions() {
-    const actions = input.takeActions();
-    if (actions & ACTION_CONFIRM && (screen === SCREEN_TITLE || screen === SCREEN_OVER)) startGame();
-    else if (actions & ACTION_PAUSE && screen === SCREEN_PLAY) {
-      screen = SCREEN_PAUSED;
-      announce('Paused.');
-    } else if (actions & (ACTION_PAUSE | ACTION_CONFIRM) && screen === SCREEN_PAUSED) {
-      screen = SCREEN_PLAY;
-      announce('Playing.');
+  function finishNight() {
+    const stars = starsFor(state);
+    const n = state.nightIndex;
+    const before = progress.stars[n] ?? 0;
+    progress.stars[n] = Math.max(before, stars);
+    saveProgress(progress);
+    ui.stars = progress.stars;
+    ui.age = 0;
+    ui.canAdvance = stars >= 1 && n < NIGHTS.length - 1;
+    ui.newUnlock = ui.canAdvance && before === 0;
+    ui.selected = ui.canAdvance ? n + 1 : n;
+    screen = 'results';
+    announce(`Night over. ${state.coins} coins, ${stars} star${stars === 1 ? '' : 's'}.`);
+  }
+
+  function playEvents() {
+    for (const e of state.events) audio.play(e.type);
+  }
+
+  function handleTitle(pressed, clicks) {
+    if (pressed.has('left')) ui.selected = Math.max(0, ui.selected - 1);
+    if (pressed.has('right')) ui.selected = Math.min(ui.unlocked, ui.selected + 1);
+    if (pressed.has('left') || pressed.has('right')) audio.play('click');
+    if (pressed.has('confirm') || pressed.has('use')) startNight(ui.selected);
+    for (const click of clicks) {
+      const card = titleCardRects().find((r) => inside(click, r));
+      if (card && card.night <= ui.unlocked) {
+        ui.selected = card.night;
+        startNight(card.night);
+      }
     }
   }
 
-  function step() {
-    if (screen === SCREEN_TITLE) {
-      world.step(STEP, 0, true);
-      return;
+  function handleResults(pressed, clicks) {
+    let choice = null;
+    if (pressed.has('confirm') || pressed.has('use')) choice = ui.canAdvance ? 'next' : 'retry';
+    if (pressed.has('retry')) choice = 'retry';
+    if (pressed.has('pause')) choice = 'menu';
+    for (const click of clicks) {
+      const b = resultButtonRects(ui.canAdvance).find((r) => inside(click, r));
+      if (b) choice = b.id;
     }
-    const events = world.step(STEP, input.direction(), false);
-    if (events & EVENT_OVER) endGame();
-    else if (events & EVENT_HIT) announce(world.state.lives === 1 ? 'Hit. 1 life left.' : `Hit. ${world.state.lives} lives left.`);
+    if (choice === 'next') startNight(state.nightIndex + 1);
+    else if (choice === 'retry') startNight(state.nightIndex);
+    else if (choice === 'menu') toTitle();
   }
 
   function frame(now) {
     requestAnimationFrame(frame);
-    accumulator += Math.min((now - last) / 1000, MAX_FRAME);
+    const dt = Math.min((now - last) / 1000, MAX_FRAME);
     last = now;
-    handleActions();
-    if (screen === SCREEN_TITLE || screen === SCREEN_PLAY) {
-      while (accumulator >= STEP && (screen === SCREEN_TITLE || screen === SCREEN_PLAY)) {
-        step();
-        accumulator -= STEP;
+    ui.time += dt;
+    ui.age += dt;
+    const pressed = input.takePressed();
+    const clicks = input.takeClicks();
+    if (pressed.size || clicks.length) audio.start();
+    if (pressed.has('music')) audio.toggleMusic();
+
+    if (screen === 'title') {
+      handleTitle(pressed, clicks);
+      idleShift(state, dt);
+    } else if (screen === 'paused') {
+      if (pressed.has('pause') || clicks.length) screen = 'play';
+      else if (pressed.has('quit')) toTitle();
+    } else if (screen === 'results') {
+      idleShift(state, dt);
+      handleResults(pressed, clicks);
+    } else if (screen === 'play') {
+      if (pressed.has('pause') && !state.over) {
+        screen = 'paused';
+        announce('Paused.');
+      } else {
+        accumulator += dt;
+        // Presses and clicks wait for the next fixed step, so none is lost on a short frame.
+        pendingUse = pendingUse || pressed.has('use');
+        pendingClicks.push(...clicks);
+        while (accumulator >= STEP) {
+          const controls = { dir: input.direction(), usePressed: pendingUse, useHeld: input.isDown('use'), clicks: pendingClicks };
+          stepShift(state, STEP, state.over ? NO_CONTROLS : controls);
+          pendingUse = false;
+          pendingClicks = [];
+          playEvents();
+          accumulator -= STEP;
+        }
+        let sizzle = 0;
+        for (const s of state.kitchen.stations) if (s.type === 'wok' || s.type === 'grill') sizzle += s.items.length;
+        audio.setSizzle(state.over ? 0 : sizzle);
+        audio.setIntensity(rushLevel(state));
+        if (state.over) {
+          overFor += dt;
+          if (overFor >= RESULTS_DELAY) finishNight();
+        }
       }
-    } else {
-      accumulator = 0;
     }
-    renderer.draw(world.state, screen, best);
+    renderer.draw({ state, screen, ui });
   }
 
-  // Leaving the tab pauses a running game rather than letting blocks fall unseen.
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && screen === SCREEN_PLAY) {
-      screen = SCREEN_PAUSED;
-      announce('Paused.');
-    }
+    if (document.hidden && screen === 'play' && !state.over) screen = 'paused';
   });
 
-  announce('Block Dodger. Press Space or click to start.');
+  // A read-only window onto the running game for automated play-tests.
+  window.__lantern = {
+    get state() {
+      return state;
+    },
+    get screen() {
+      return screen;
+    },
+  };
+  announce('Lantern Lane Kitchen. Press Enter or click a night to open the stall.');
   requestAnimationFrame(frame);
 }
 

@@ -1,61 +1,40 @@
-// Every tuning number and colour in one place. The playfield is a fixed 1280x720 logical area;
-// the renderer scales it to the window, so no rule below depends on the screen size.
+// Shared numbers: the logical canvas, the kitchen grid, the fixed step and the timings that set
+// how a shift feels. Every other module reads these instead of hard-coding its own.
 
-export const FIELD = { width: 1280, height: 720, groundY: 664 };
+export const VIEW_W = 1280;
+export const VIEW_H = 800;
 
-/** The simulation's fixed step, in seconds: 60 updates a second whatever the display's rate. */
+/** The kitchen is a 12 x 7 grid of square tiles under the ticket rail; the street is to its right. */
+export const TILE = 92;
+export const GRID_X = 16;
+export const GRID_Y = 150;
+export const COLS = 12;
+export const ROWS = 7;
+export const STREET_X = GRID_X + COLS * TILE;
+
 export const STEP = 1 / 60;
 
-export const PLAYER = {
-  width: 72,
-  height: 24,
-  speed: 560,
-  invulnerable: 1.5,
+export const SHIFT_SECONDS = 180;
+export const PLAYER_SPEED = 340;
+export const PLAYER_RADIUS = 23;
+
+/** Seconds of holding Space (or the mouse) to chop one ingredient. */
+export const CHOP_SECONDS = 0.9;
+export const CHOP_STROKE = 0.14;
+
+export const MAX_TICKETS = 5;
+export const STATION_CAPACITY = 3;
+
+/** Per cooking station: seconds to cook, then seconds more before it burns. */
+export const COOK = {
+  pot: { time: 6.5, burn: 8 },
+  wok: { time: 4.5, burn: 6 },
+  steamer: { time: 7.5, burn: 9 },
+  grill: { time: 5.5, burn: 7 },
 };
 
-export const LIVES = 3;
+export const MISS_PENALTY = 8;
+export const SAVE_KEY = 'lantern-lane-kitchen/v1';
 
-export const BLOCK = {
-  minWidth: 40,
-  maxWidth: 110,
-  height: 36,
-  speed: 240,
-  speedPerLevel: 30,
-  speedJitter: 90,
-  interval: 0.55,
-  intervalScale: 0.88,
-  minInterval: 0.14,
-  dodgePoints: 1,
-};
-
-export const COIN = {
-  size: 24,
-  speed: 190,
-  speedPerLevel: 14,
-  interval: 1.4,
-  intervalJitter: 0.8,
-  points: 10,
-};
-
-/** Seconds of play per level, and the last level: speeds and spawn rates stop growing there. */
-export const LEVEL = { seconds: 12, max: 12 };
-
-/** How many falling things can exist at once; the pool is allocated once, at boot. */
-export const POOL_SIZE = 64;
-
-export const PALETTE = {
-  backdrop: '#11141b',
-  sky: '#1b1f2a',
-  ground: '#2a3040',
-  player: '#4fc3f7',
-  block: '#e5534b',
-  coin: '#f2c94c',
-  panel: '#252b38',
-  text: '#eef1f5',
-  muted: '#8b93a3',
-};
-
-export const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
-
-/** Where the best score is kept between visits (this browser only). */
-export const BEST_KEY = 'block-dodger.best';
+export const FONT = '"Trebuchet MS", "Segoe UI", system-ui, sans-serif';
+export const TITLE_FONT = 'Georgia, "Palatino Linotype", "Book Antiqua", serif';
