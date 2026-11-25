@@ -24,7 +24,8 @@ Customers queue in the street and their orders hang on the ticket rail. Each tic
 - Take a **plate** from a stack and add parts in any order. A plate only accepts parts that still fit a dish on tonight's menu, and a finished plate shows a READY tag.
 - Cooked food that stays on the heat starts to smoke and then **burns**. Put burnt food in the bin.
 - A fast serve earns a **tip**, and serves in a row build a **combo**. A customer who gives up costs coins and breaks the combo.
-- The street gets busier during the shift: orders come faster through **rush hour**, then ease near closing time.
+- The street gets busier during the shift: orders come faster through **rush hour**, then ease near closing time. From night 2 a **VIP** sometimes orders: a gold ticket that pays double but has less patience.
+- Each night has its own weather over the street: sky lanterns, rain, fireworks, a full moon.
 - There are **five nights** and **eight dishes**: Lantern Noodle Soup, Firefly Skewers, Moon Dumplings, Golden Fried Rice, Pillow Pork Bao, Mango Sticky Rice, Harbour Shrimp Noodles and Sizzle Lane Stir-fry. Earn at least one star to unlock the next night.
 
 All art is drawn with canvas 2D code and all sound is synthesised with WebAudio. The game has no assets and makes no network requests.
@@ -44,7 +45,7 @@ node tools/validate.mjs  # hand-in checks: deterministic output, screenshots, re
 - `game/src/main.js` boots the game, runs the loop and switches screens. `shift.js` holds the state of one night and its fixed step.
 - `ingredients.js`, `recipes.js` and `kitchen-layout.js` hold the data: what each tool makes of each ingredient, the dishes and nights, and the floor plan.
 - `interact.js`, `stations.js`, `orders.js`, `player.js` and `pathfind.js` hold the rules: using a station, cooking and burning, tickets and scoring, movement, and click-to-walk.
-- `food-art.js`, `kitchen-art.js`, `people-art.js`, `hud.js`, `screens.js` and `render.js` draw the frame. `effects.js` and `feedback.js` handle particles and pop-ups. `audio.js` makes the sound.
+- `food-art.js`, `kitchen-art.js`, `people-art.js`, `night-sky.js`, `hud.js`, `screens.js` and `render.js` draw the frame on top of the canvas primitives in `paint.js`. `effects.js` and `feedback.js` handle particles and pop-ups. `hints.js` coaches the first night. `audio.js` makes the sound.
 - `shots.js` stages the deterministic screenshot scenes.
 
 ---

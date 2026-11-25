@@ -77,6 +77,17 @@ try {
   check((await value('window.__lantern.state.served')) === 1, 'soup served at the hatch');
   console.log(`     coins: ${await value('window.__lantern.state.coins')}`);
 
+  // Keyboard only: take scallion from its crate, lay it on a board, hold Space to chop.
+  const place = (c, r, fx, fy) => value(`(() => { const p = window.__lantern.state.player; p.x = ${16 + c * 92 + 46}; p.y = ${150 + r * 92 + 46}; p.fx = ${fx}; p.fy = ${fy}; p.path = null; return true; })()`);
+  await place(1, 3, -1, 0);
+  await sleep(100);
+  await key('Space');
+  check((await held())?.includes('scallion'), 'Space at a crate picks up scallion');
+  await place(4, 2, 0, 1);
+  await sleep(100);
+  await key('Space', 1400);
+  check((await value('window.__lantern.state.kitchen.grid[3][4].held?.state')) === 'chopped', 'holding Space at the board chops it');
+
   // Keyboard: walk around, use, pause and resume.
   await key('ArrowLeft', 300);
   await key('ArrowUp', 300);
