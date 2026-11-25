@@ -7,6 +7,7 @@ import { drawCook, drawCustomers } from './people-art.js';
 import { drawParticles, drawTexts } from './effects.js';
 import { drawBanner, drawHud } from './hud.js';
 import { drawPause, drawResults, drawTitle } from './screens.js';
+import { drawNightSky } from './night-sky.js';
 
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
@@ -40,6 +41,7 @@ export function createRenderer(canvas) {
     const t = state.clock;
     const { kitchen, player } = state;
     ctx.drawImage(staticLayer(kitchen), 0, 0);
+    drawNightSky(ctx, state.nightIndex, t);
     drawCustomers(ctx, state.orders, t);
     const playerRow = Math.floor((player.y - GRID_Y) / TILE);
     for (let r = 0; r < ROWS; r += 1) {
@@ -74,7 +76,7 @@ export function createRenderer(canvas) {
       ctx.translate(Math.sin(state.clock * 91) * s, Math.cos(state.clock * 77) * s);
     }
     drawKitchen(state);
-    drawHud(ctx, state, state.clock);
+    if (screen !== 'title') drawHud(ctx, state, state.clock);
     if (state.fx.flash > 0) {
       ctx.globalAlpha = state.fx.flash * 0.35;
       ctx.fillStyle = state.fx.flashColor;

@@ -37,8 +37,8 @@ function pickRecipe(state) {
   return pool[Math.floor(state.random() * pool.length)];
 }
 
-export function addOrder(state, recipeId = pickRecipe(state), patienceShare = 1) {
-  const patience = patienceFor(state, recipeId);
+export function addOrder(state, recipeId = pickRecipe(state), patienceShare = 1, vip = false) {
+  const patience = patienceFor(state, recipeId) * (vip ? 0.8 : 1);
   const order = {
     id: state.orderSeq,
     recipe: recipeId,
@@ -48,6 +48,7 @@ export function addOrder(state, recipeId = pickRecipe(state), patienceShare = 1)
     customer: state.orderSeq % 7,
     leaving: 0,
     outcome: null,
+    vip,
   };
   state.orderSeq += 1;
   state.orders.push(order);
@@ -66,7 +67,11 @@ export function updateOrders(state, dt) {
   const live = state.orders.filter((o) => !o.outcome);
   state.nextOrderIn -= dt * (live.length === 0 ? 3 : 1);
   if (state.nextOrderIn <= 0 && state.timeLeft > 8) {
-    if (live.length < MAX_TICKETS) addOrder(state);
+    if (live.length < MAX_TICKETS) {
+      // From night 2 a lantern VIP sometimes turns up: less patient, pays double.
+      const vip = state.nightIndex >= 1 && !live.some((o) => o.vip) && state.random() < 0.16;
+      addOrder(state, pickRecipe(state), 1, vip);
+    }
     state.nextOrderIn = nextGap(state);
   }
   for (const order of state.orders) {
@@ -99,18 +104,18 @@ export function serveDish(state, plate, station) {
   if (!best) return { ok: false, reason: `Nobody ordered ${RECIPES[recipeId].short}` };
   const recipe = RECIPES[recipeId];
   const share = Math.max(0, best.patience / best.maxPatience);
-  const tip = Math.round(recipe.price * 0.6 * share);
+  const tip = Math.round(recipe.price * 0.6 * share) * (best.vip ? 2 : 1);
   state.combo += 1;
   state.bestCombo = Math.max(state.bestCombo, state.combo);
   const comboBonus = Math.min(5, state.combo - 1) * 3;
-  const coins = recipe.price + tip + comboBonus;
+  const coins = recipe.price * (best.vip ? 2 : 1) + tip + comboBonus;
   state.coins += coins;
   state.served += 1;
   state.servedLog.push(recipeId);
   state.tips += tip;
   best.outcome = 'served';
   best.plate = plate;
-  state.events.push({ type: 'served', order: best, coins, tip, combo: state.combo, station });
+  state.events.push({ type: 'served', order: best, coins, tip, combo: state.combo, vip: best.vip, station });
   return { ok: true, coins };
 }
 

@@ -108,10 +108,24 @@ function drawTicket(ctx, order, x, y, t) {
   ctx.beginPath();
   ctx.roundRect(3, 4, TICKET_W, TICKET_H, 6);
   ctx.fill();
-  ctx.fillStyle = urgent && Math.sin(t * 10) > 0 ? '#ffe2d8' : '#fff4dc';
+  ctx.fillStyle = urgent && Math.sin(t * 10) > 0 ? '#ffe2d8' : order.vip ? '#fff0b8' : '#fff4dc';
   ctx.beginPath();
   ctx.roundRect(0, 0, TICKET_W, TICKET_H, 6);
   ctx.fill();
+  if (order.vip) {
+    ctx.strokeStyle = '#d99a1e';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#c8302a';
+    ctx.beginPath();
+    ctx.roundRect(TICKET_W - 46, TICKET_H - 24, 40, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#ffe9a0';
+    ctx.font = `bold 11px ${FONT}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('VIP x2', TICKET_W - 26, TICKET_H - 14.5);
+  }
   // Patience bar.
   ctx.fillStyle = 'rgba(80,40,20,0.18)';
   ctx.fillRect(6, 6, TICKET_W - 12, 9);

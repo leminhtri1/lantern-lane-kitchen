@@ -1,7 +1,7 @@
 // The screens around a shift: the title with the five nights to pick from, the pause screen that
 // doubles as the recipe book, and the end-of-night results with stars and the dishes served.
 import { FONT, TITLE_FONT, VIEW_H, VIEW_W } from './config.js';
-import { routeTo } from './ingredients.js';
+import { INGREDIENTS, TOOL_VERBS, routeTo } from './ingredients.js';
 import { NIGHTS, RECIPES } from './recipes.js';
 import { drawDish, drawIngredient } from './food-art.js';
 import { drawCoin, drawStar, drawToolIcon } from './hud.js';
@@ -189,18 +189,23 @@ export function drawRecipeCard(ctx, id, x, y, w, h, t) {
   ctx.fillText(recipe.name, x + 136, y + 22);
   recipe.parts.forEach((part, i) => {
     const [ing, state] = part.split(':');
-    const py = y + 52 + i * 30;
-    drawIngredient(ctx, { kind: 'item', ing, state: 'raw' }, x + 150, py, 24);
+    const py = y + 54 + i * 30;
+    const route = routeTo(ing, state);
+    drawIngredient(ctx, { kind: 'item', ing, state: 'raw' }, x + 154, py, 30);
     ctx.fillStyle = '#8a5a3a';
-    ctx.font = `bold 14px ${FONT}`;
-    ctx.fillText('›', x + 166, py);
-    let tx = x + 186;
-    for (const tool of routeTo(ing, state)) {
-      drawToolIcon(ctx, tool, tx, py, 16);
-      tx += 24;
+    ctx.font = `bold 16px ${FONT}`;
+    ctx.textAlign = 'left';
+    ctx.fillText('›', x + 174, py);
+    let tx = x + 196;
+    for (const tool of route) {
+      drawToolIcon(ctx, tool, tx, py, 20);
+      tx += 28;
     }
-    ctx.fillText('›', tx - 6, py);
-    drawIngredient(ctx, { kind: 'item', ing, state }, tx + 16, py, 26);
+    ctx.fillText('›', tx - 8, py);
+    drawIngredient(ctx, { kind: 'item', ing, state }, tx + 18, py, 32);
+    ctx.fillStyle = '#6a3a1e';
+    ctx.font = `14px ${FONT}`;
+    ctx.fillText(`${INGREDIENTS[ing].name}: ${route.map((tool) => TOOL_VERBS[tool]).join(', then ')}`, x + 338, py + 1);
   });
   ctx.fillStyle = '#a8701e';
   ctx.font = `bold 14px ${FONT}`;
@@ -222,12 +227,12 @@ export function drawPause(ctx, state, t) {
   const menu = state.menu;
   const cols = menu.length > 4 ? 2 : 1;
   const w = cols === 2 ? 560 : 600;
-  const h = 150;
+  const h = 140;
   menu.forEach((id, i) => {
     const col = cols === 2 ? i % 2 : 0;
     const row = cols === 2 ? Math.floor(i / 2) : i;
     const x = cols === 2 ? VIEW_W / 2 - w - 12 + col * (w + 24) : VIEW_W / 2 - w / 2;
-    drawRecipeCard(ctx, id, x, 140 + row * (h + 12), w, h, t);
+    drawRecipeCard(ctx, id, x, 138 + row * (h + 12), w, h, t);
   });
   ctx.fillStyle = '#fff2d8';
   ctx.font = `bold 18px ${FONT}`;

@@ -1,4 +1,4 @@
-// The screenshot scenes behind ?shot=rush|plating|results|title. Each builds a real shift with the
+// The screenshot scenes behind ?shot=rush|rush-hour|recipes|results|title. Each builds a real shift with the
 // game's own rules and art, puts food where a busy cook would have it (the same seed always gives
 // the same frame), lets steam, flames and chop bits play out for a moment, and returns the scene.
 import { STEP } from './config.js';
@@ -94,6 +94,7 @@ function stageRush(seed) {
     ['soup', 0.74],
     ['bao', 0.93],
   ]);
+  state.orders[4].vip = true;
   // The cooking line, all of it busy.
   cook(state, 1, 0, 'noodles', 'raw', 0.62);
   cook(state, 1, 0, 'egg', 'raw', 0.62);
@@ -131,28 +132,28 @@ function stageRush(seed) {
   return { state, screen: 'play', ui: { time: 0 } };
 }
 
-function stagePlating(seed) {
-  const state = createShift(4, createRandom(seed));
-  state.timeLeft = 23;
+function stageRushHour(seed) {
+  const state = createShift(3, createRandom(seed));
+  state.timeLeft = 106;
   state.rushAnnounced = true;
-  state.banner = null;
-  state.coins = 352;
-  state.combo = 5;
-  state.bestCombo = 5;
+  state.banner = { text: 'Rush hour!', sub: 'The lanterns are lit and the street is full', time: 1.2 };
+  state.coins = 168;
+  state.combo = 4;
+  state.bestCombo = 4;
   setOrders(state, [
-    ['shrimpsoup', 0.24],
-    ['stirfry', 0.46],
-    ['mango', 0.6],
-    ['bao', 0.78],
-    ['soup', 0.95],
+    ['shrimpsoup', 0.3],
+    ['dumplings', 0.5],
+    ['mango', 0.64],
+    ['bao', 0.8],
+    ['friedrice', 0.96],
   ]);
-  cook(state, 5, 0, 'mushroom', 'chopped', 0.7);
-  cook(state, 5, 0, 'cabbage', 'chopped', 0.7);
-  cook(state, 5, 0, 'pork', 'chopped', 0.7);
+  state.orders[3].vip = true;
+  cook(state, 4, 0, 'rice', 'raw', 0.7);
+  cook(state, 4, 0, 'egg', 'raw', 0.7);
   cook(state, 2, 0, 'noodles', 'raw', 0.3);
   cook(state, 7, 0, 'rice', 'raw', 0.85);
-  cook(state, 8, 0, 'bun', 'raw', 1.1);
-  cook(state, 8, 0, 'pork', 'chopped', 1.1);
+  cook(state, 8, 0, 'pork', 'chopped', 0.5);
+  cook(state, 8, 0, 'cabbage', 'chopped', 0.5);
   cook(state, 10, 0, 'shrimp', 'raw', 2.4);
   at(state, 5, 3).held = plate('bun:steamed');
   at(state, 6, 3).held = item('mango', 'chopped');
@@ -163,6 +164,22 @@ function stagePlating(seed) {
   placeCook(state, 10, 2, 1, 0, 30);
   settle(state, 1.6);
   return { state, screen: 'play', ui: { time: 0 } };
+}
+
+function stageRecipeBook(seed) {
+  const state = createShift(4, createRandom(seed));
+  state.timeLeft = 131;
+  state.coins = 96;
+  setOrders(state, [
+    ['stirfry', 0.6],
+    ['bao', 0.8],
+    ['soup', 0.95],
+  ]);
+  cook(state, 5, 0, 'mushroom', 'chopped', 0.4);
+  cook(state, 1, 0, 'noodles', 'raw', 0.5);
+  placeCook(state, 5, 2, 0, -1);
+  settle(state, 1);
+  return { state, screen: 'paused', ui: { time: 1.4 } };
 }
 
 function stageResults(seed) {
@@ -193,7 +210,8 @@ function stageTitle(seed) {
 }
 
 export function stageShot(name, seed) {
-  if (name === 'plating') return stagePlating(seed);
+  if (name === 'rush-hour') return stageRushHour(seed);
+  if (name === 'recipes') return stageRecipeBook(seed);
   if (name === 'results') return stageResults(seed);
   if (name === 'title') return stageTitle(seed);
   return stageRush(seed);

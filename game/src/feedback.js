@@ -53,6 +53,7 @@ export function applyFeedback(state) {
         emit(fx, random, 'spark', p.x, p.y, 22, { colors: ['#ffd166', '#fff4b0', '#ff9f43'], speed: 200, life: 0.8, size: 9 });
         floatText(fx, p.x - 30, p.y - 50, `+${e.coins}`, '#ffd85e', 34, 1.5);
         if (e.combo > 1) floatText(fx, p.x - 30, p.y - 10, `Combo x${e.combo}`, '#ff9fd0', 22, 1.4);
+        if (e.vip) floatText(fx, p.x - 30, p.y + 24, 'VIP pays double!', '#ffe066', 20, 1.6);
         fx.flash = 0.35;
         fx.flashColor = '#fff3c4';
         break;

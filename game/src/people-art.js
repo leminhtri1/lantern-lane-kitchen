@@ -1,6 +1,6 @@
 // The cook (teal jacket, red headband, cleaver in hand when chopping) and the customers queuing on
 // the street outside the hatch, each waiting under a little speech bubble with their dish.
-import { FONT, GRID_Y, STREET_X, TILE } from './config.js';
+import { FONT, GRID_Y, STREET_X } from './config.js';
 import { drawIngredient, drawPlated, drawDish } from './food-art.js';
 import { plateKeys } from './recipes.js';
 
@@ -8,8 +8,8 @@ const TAU = Math.PI * 2;
 
 function drawHeld(ctx, held, x, y, t) {
   if (!held) return;
-  if (held.kind === 'plate') drawPlated(ctx, plateKeys(held), x, y, 24, t);
-  else drawIngredient(ctx, held, x, y, 34);
+  if (held.kind === 'plate') drawPlated(ctx, plateKeys(held), x, y, 28, t);
+  else drawIngredient(ctx, held, x, y, 40);
 }
 
 export function drawCook(ctx, player, t) {
@@ -131,10 +131,21 @@ function drawCustomer(ctx, order, x, y, t) {
   ctx.beginPath();
   ctx.arc(cx, y - 16, 15, 0, TAU);
   ctx.fill();
-  ctx.fillStyle = HATS[order.customer % HATS.length];
+  ctx.fillStyle = order.vip ? '#f2c14e' : HATS[order.customer % HATS.length];
   ctx.beginPath();
   ctx.arc(cx, y - 20, 15.5, Math.PI, TAU);
   ctx.fill();
+  if (order.vip) {
+    ctx.beginPath();
+    ctx.moveTo(cx - 12, y - 30);
+    ctx.lineTo(cx - 8, y - 44);
+    ctx.lineTo(cx - 2, y - 34);
+    ctx.lineTo(cx + 4, y - 46);
+    ctx.lineTo(cx + 8, y - 34);
+    ctx.lineTo(cx + 13, y - 42);
+    ctx.lineTo(cx + 12, y - 30);
+    ctx.fill();
+  }
   // Face toward the hatch.
   ctx.fillStyle = '#2b1a12';
   ctx.beginPath();

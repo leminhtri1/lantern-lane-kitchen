@@ -11,6 +11,7 @@ import { drawIngredient, drawPlated } from './food-art.js';
 
 const TAU = Math.PI * 2;
 const FRONT = 18;
+const LABELS = { pot: 'BROTH POT', wok: 'WOK', steamer: 'STEAMER', grill: 'GRILL', board: 'CHOP', plates: 'PLATES', trash: 'BIN' };
 
 function tileBox(c, r) {
   const x = GRID_X + c * TILE;
@@ -40,37 +41,139 @@ function drawStreet(ctx) {
   pool.addColorStop(1, 'rgba(255,170,80,0)');
   ctx.fillStyle = pool;
   ctx.fillRect(STREET_X, GRID_Y, VIEW_W - STREET_X, VIEW_H - GRID_Y);
+  // A pole of paper lanterns along the far side of the street.
+  ctx.fillStyle = '#1a0e08';
+  ctx.fillRect(VIEW_W - 12, GRID_Y, 5, VIEW_H - GRID_Y);
+  for (const ly of [200, 440, 680]) streetLantern(ctx, VIEW_W - 22, ly);
+}
+
+function streetLantern(ctx, x, y) {
+  const glow = ctx.createRadialGradient(x, y, 4, x, y, 60);
+  glow.addColorStop(0, 'rgba(255,160,70,0.45)');
+  glow.addColorStop(1, 'rgba(255,160,70,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(x - 60, y - 60, 120, 120);
+  ctx.strokeStyle = '#1a0e08';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 12, y - 30);
+  ctx.lineTo(x, y - 16);
+  ctx.stroke();
+  const body = ctx.createRadialGradient(x - 4, y - 5, 2, x, y, 16);
+  body.addColorStop(0, '#ffc08a');
+  body.addColorStop(0.6, '#e0402c');
+  body.addColorStop(1, '#8a1a14');
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.ellipse(x, y, 13, 16, 0, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = '#e8b85a';
+  ctx.fillRect(x - 6, y - 18, 12, 4);
+  ctx.fillRect(x - 6, y + 14, 12, 4);
+}
+
+function drawRug(ctx, x, y, w, h) {
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.roundRect(x + 4, y + 6, w, h, 10);
+  ctx.fill();
+  ctx.fillStyle = '#7a1f1c';
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#e0a84a';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(x + 8, y + 8, w - 16, h - 16, 6);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(224,168,74,0.55)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(x + 16, y + 16, w - 32, h - 32, 4);
+  ctx.stroke();
+  // Lucky-coin medallions joined by a woven gold cord.
+  const my = y + h / 2;
+  ctx.strokeStyle = 'rgba(224,168,74,0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 30, my);
+  ctx.lineTo(x + w - 30, my);
+  ctx.stroke();
+  for (let lx = x + 70; lx < x + w - 40; lx += 92) {
+    ctx.fillStyle = '#e0a84a';
+    ctx.beginPath();
+    ctx.arc(lx, my, 17, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#a82c24';
+    ctx.beginPath();
+    ctx.arc(lx, my, 12, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#e0a84a';
+    ctx.fillRect(lx - 5, my - 5, 10, 10);
+    ctx.fillStyle = '#8c2420';
+    ctx.fillRect(lx - 2.5, my - 2.5, 5, 5);
+    ctx.save();
+    ctx.translate(lx + 46, my);
+    ctx.rotate(Math.PI / 4);
+    ctx.fillStyle = 'rgba(224,168,74,0.75)';
+    ctx.fillRect(-5, -5, 10, 10);
+    ctx.restore();
+  }
 }
 
 function drawFloor(ctx) {
   const x0 = GRID_X;
   const y0 = GRID_Y;
-  ctx.fillStyle = '#3a2118';
-  ctx.fillRect(x0, y0, COLS * TILE, ROWS * TILE);
-  const half = TILE / 2;
-  for (let r = 0; r < ROWS * 2; r += 1) {
-    for (let c = 0; c < COLS * 2; c += 1) {
-      ctx.fillStyle = (r + c) % 2 === 0 ? '#7a4a33' : '#6a3d2a';
-      ctx.fillRect(x0 + c * half + 1, y0 + r * half + 1, half - 2, half - 2);
+  const w = COLS * TILE;
+  const h = ROWS * TILE;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x0, y0, w, h);
+  ctx.clip();
+  // Warm wooden planks, staggered, with grain.
+  const plank = 30;
+  const tones = ['#8d5a36', '#83512f', '#97643c', '#7c4a2b'];
+  for (let row = 0; row * plank < h; row += 1) {
+    const y = y0 + row * plank;
+    let x = x0 - ((row * 67) % 160);
+    let k = row;
+    while (x < x0 + w) {
+      const len = 150 + ((k * 37) % 70);
+      ctx.fillStyle = tones[k % tones.length];
+      ctx.fillRect(x, y, len - 2, plank - 2);
+      ctx.strokeStyle = 'rgba(60,30,12,0.25)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + 6, y + 9 + (k % 3) * 4);
+      ctx.bezierCurveTo(x + len * 0.3, y + 6, x + len * 0.6, y + 16, x + len - 8, y + 10 + (k % 2) * 6);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(40,18,6,0.5)';
+      ctx.fillRect(x + len - 2, y, 2, plank - 2);
+      x += len;
+      k += 3;
     }
+    ctx.fillStyle = 'rgba(40,18,6,0.55)';
+    ctx.fillRect(x0, y + plank - 2, w, 2);
   }
+  drawRug(ctx, GRID_X + TILE * 2 + 20, GRID_Y + TILE * 4 + 14, TILE * 7 - 40, TILE * 2 - 30);
   // Warm light pools under the hanging lanterns.
   for (const [lx, ly] of [
-    [300, 330],
-    [640, 560],
-    [900, 320],
+    [330, 320],
+    [600, 600],
+    [880, 330],
   ]) {
     const g = ctx.createRadialGradient(lx, ly, 10, lx, ly, 300);
-    g.addColorStop(0, 'rgba(255,200,120,0.28)');
+    g.addColorStop(0, 'rgba(255,200,120,0.3)');
     g.addColorStop(1, 'rgba(255,200,120,0)');
     ctx.fillStyle = g;
-    ctx.fillRect(x0, y0, COLS * TILE, ROWS * TILE);
+    ctx.fillRect(x0, y0, w, h);
   }
-  const vignette = ctx.createRadialGradient(560, 470, 200, 560, 470, 720);
+  const vignette = ctx.createRadialGradient(560, 470, 220, 560, 470, 720);
   vignette.addColorStop(0, 'rgba(0,0,0,0)');
   vignette.addColorStop(1, 'rgba(10,4,20,0.45)');
   ctx.fillStyle = vignette;
-  ctx.fillRect(x0, y0, COLS * TILE, ROWS * TILE);
+  ctx.fillRect(x0, y0, w, h);
+  ctx.restore();
 }
 
 function isHot(type) {
@@ -120,6 +223,14 @@ function drawCounterBody(ctx, kitchen, station) {
     ctx.fillRect(x, y + topH, TILE, 3);
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.fillRect(x, y + TILE, TILE, 6);
+    const label = LABELS[station.type];
+    if (label) {
+      ctx.fillStyle = '#ffe2a0';
+      ctx.font = `bold 11px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, x + TILE / 2, y + topH + FRONT / 2 + 1.5);
+    }
   }
   // Edge light toward the floor.
   const right = stationAt(kitchen, station.c + 1, station.r);
@@ -430,7 +541,7 @@ function drawPot(ctx, station, t) {
     ctx.arc(cx + Math.cos(a) * 18, cy + Math.sin(a * 1.3) * 13, rr, 0, TAU);
     ctx.fill();
   }
-  itemSlots(station.items.length, cx, cy, 28).forEach(([x, y], i) => drawIngredient(ctx, station.items[i], x, y + Math.sin(t * 4 + i) * 1.5, 26));
+  itemSlots(station.items.length, cx, cy, 30).forEach(([x, y], i) => drawIngredient(ctx, station.items[i], x, y + Math.sin(t * 4 + i) * 1.5, 32));
 }
 
 function drawWok(ctx, station, t) {
@@ -475,7 +586,7 @@ function drawWok(ctx, station, t) {
   ctx.beginPath();
   ctx.ellipse(cx, cy + toss, 33, 26, 0, Math.PI * 1.1, Math.PI * 1.6);
   ctx.stroke();
-  itemSlots(station.items.length, cx, cy + toss, 26).forEach(([x, y], i) => drawIngredient(ctx, station.items[i], x, y - Math.abs(Math.sin(t * 9 + i)) * 4, 26));
+  itemSlots(station.items.length, cx, cy + toss, 26).forEach(([x, y], i) => drawIngredient(ctx, station.items[i], x, y - Math.abs(Math.sin(t * 9 + i)) * 4, 32));
 }
 
 function drawSteamer(ctx, station, t) {
@@ -509,7 +620,7 @@ function drawSteamer(ctx, station, t) {
     ctx.lineTo(cx + i * 10, cy + 22);
     ctx.stroke();
   }
-  itemSlots(station.items.length, cx, cy, 26).forEach(([x, y], i) => drawIngredient(ctx, station.items[i], x, y, 26));
+  itemSlots(station.items.length, cx, cy, 28).forEach(([x, y], i) => drawIngredient(ctx, station.items[i], x, y, 32));
   // Woven lid tipped against the rim while something steams.
   if (busy) {
     ctx.fillStyle = 'rgba(214,170,98,0.92)';
@@ -554,15 +665,15 @@ function drawGrill(ctx, station, t) {
     ctx.lineTo(cx - 36 + i * 12, cy + 26);
     ctx.stroke();
   }
-  itemSlots(station.items.length, cx, cy, 26).forEach(([x, y], i) => drawIngredient(ctx, station.items[i], x, y, 28));
+  itemSlots(station.items.length, cx, cy, 30).forEach(([x, y], i) => drawIngredient(ctx, station.items[i], x, y, 38));
 }
 
 /** A plate sitting on a counter, or the item lying there. */
 function drawHeldThing(ctx, thing, x, y, t, menu) {
   if (thing.kind === 'plate') {
-    drawPlated(ctx, plateKeys(thing), x, y, 30, t);
-    if (thing.items.length && matchRecipe(thing, menu)) drawReadyTag(ctx, x, y - 34, t);
-  } else drawIngredient(ctx, thing, x, y, 40);
+    drawPlated(ctx, plateKeys(thing), x, y, 37, t);
+    if (thing.items.length && matchRecipe(thing, menu)) drawReadyTag(ctx, x, y - 38, t);
+  } else drawIngredient(ctx, thing, x, y, 52);
 }
 
 function drawReadyTag(ctx, x, y, t) {
