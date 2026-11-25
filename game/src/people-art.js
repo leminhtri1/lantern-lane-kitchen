@@ -12,7 +12,19 @@ function drawHeld(ctx, held, x, y, t) {
   else drawIngredient(ctx, held, x, y, 40);
 }
 
+const COOK_SCALE = 1.18;
+
+/** The cook, drawn a little larger than a tile's food so they read at a glance. */
 export function drawCook(ctx, player, t) {
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  ctx.scale(COOK_SCALE, COOK_SCALE);
+  ctx.translate(-player.x, -player.y);
+  drawCookBody(ctx, player, t);
+  ctx.restore();
+}
+
+function drawCookBody(ctx, player, t) {
   const { x, y, fx, fy } = player;
   const bob = player.moving ? Math.abs(Math.sin(player.walk)) * 3 : 0;
   const chopping = !!player.chopping;

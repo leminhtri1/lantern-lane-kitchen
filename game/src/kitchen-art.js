@@ -556,7 +556,15 @@ export function drawStationTop(ctx, station, t, menu, chopSwing) {
   else if (station.type === 'wok') drawWok(ctx, station, t);
   else if (station.type === 'steamer') drawSteamer(ctx, station, t);
   else if (station.type === 'grill') drawGrill(ctx, station, t);
-  if (station.held) drawHeldThing(ctx, station.held, cx, cy - 2, t, menu);
+  const thing = station.held;
+  if (thing && station.type === 'board' && canChop(thing) && thing.progress > 0) {
+    // Mid-chop: the whole piece shrinks as the cut pile beside it grows.
+    const p = Math.min(1, thing.progress);
+    drawIngredient(ctx, thing, cx - 8 - p * 6, cy - 2, 52 * (1 - p * 0.45));
+    ctx.globalAlpha = Math.min(1, p * 1.6);
+    drawIngredient(ctx, { ...thing, state: 'chopped' }, cx + 10, cy + 4, 30 + p * 16);
+    ctx.globalAlpha = 1;
+  } else if (thing) drawHeldThing(ctx, thing, cx, cy - 2, t, menu);
   if (station.type === 'board') drawCleaver(ctx, cx, cy, chopSwing);
 }
 
@@ -607,8 +615,8 @@ export function drawStationStatus(ctx, station, t) {
   }
   if (station.type === 'board' && canChop(station.held) && station.held.progress > 0) {
     const w = 64;
-    rrect(ctx, cx - w / 2 - 3, cy - 44, w + 6, 14, 7, 'rgba(20,10,5,0.8)');
-    rrect(ctx, cx - w / 2, cy - 41, w * Math.min(1, station.held.progress), 8, 4, '#ffd34e');
+    rrect(ctx, cx - w / 2 - 3, cy + 24, w + 6, 14, 7, 'rgba(20,10,5,0.8)');
+    rrect(ctx, cx - w / 2, cy + 27, w * Math.min(1, station.held.progress), 8, 4, '#ffd34e');
   }
 }
 

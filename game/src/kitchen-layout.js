@@ -69,6 +69,3 @@ export function isFloor(kitchen, c, r) {
   return c >= 0 && r >= 0 && c < COLS && r < ROWS && kitchen.grid[r][c] === null;
 }
 
-export function findStations(kitchen, type) {
-  return kitchen.stations.filter((s) => s.type === type);
-}

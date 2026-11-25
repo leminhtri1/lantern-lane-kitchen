@@ -17,25 +17,14 @@ export const INGREDIENTS = {
   mango: { name: 'Mango', color: '#ffb52e', steps: { raw: { board: 'chopped' } } },
 };
 
-export const INGREDIENT_IDS = Object.keys(INGREDIENTS);
-
 /** The word a ticket uses for each tool. */
 export const TOOL_VERBS = { board: 'chop', pot: 'boil', wok: 'fry', steamer: 'steam', grill: 'grill' };
-
-/** The tool that leads from `from` to `to` for `ing`, or null. */
-export function toolFor(ing, from, to) {
-  const steps = INGREDIENTS[ing].steps[from];
-  if (!steps) return null;
-  for (const tool of Object.keys(steps)) if (steps[tool] === to) return tool;
-  return null;
-}
 
 /**
  * The tools an item passes through on its way to `state`, in order (raw pork to steamed is
  * board then steamer). Used by tickets and the recipe book to show the route.
  */
 export function routeTo(ing, state) {
-  const route = [];
   const search = (from, path) => {
     if (from === state) return path;
     const steps = INGREDIENTS[ing].steps[from];
@@ -46,7 +35,7 @@ export function routeTo(ing, state) {
     }
     return null;
   };
-  return search('raw', route) ?? route;
+  return search('raw', []) ?? [];
 }
 
 export function newItem(ing) {

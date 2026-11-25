@@ -5,7 +5,7 @@ import { INGREDIENTS, TOOL_VERBS, routeTo } from './ingredients.js';
 import { NIGHTS, RECIPES } from './recipes.js';
 import { drawDish, drawIngredient } from './food-art.js';
 import { drawCoin, drawStar, drawToolIcon } from './hud.js';
-import { TAU, circle, oval, radial, rrect, text } from './paint.js';
+import { circle, oval, radial, rrect, text } from './paint.js';
 
 
 function veil(ctx, alpha) {

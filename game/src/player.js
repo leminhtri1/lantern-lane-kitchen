@@ -1,6 +1,6 @@
 // The cook: walks the floor with keys or by following a clicked path, slides along counters, faces
 // the way they last moved and works the station in front of them.
-import { GRID_X, GRID_Y, PLAYER_RADIUS, PLAYER_SPEED, TILE } from './config.js';
+import { PLAYER_RADIUS, PLAYER_SPEED, TILE } from './config.js';
 import { isFloor, stationAt, tileAt, tileCenter } from './kitchen-layout.js';
 import { pathToStation, findPath } from './pathfind.js';
 
@@ -103,24 +103,16 @@ export function walkTo(player, kitchen, x, y) {
   return null;
 }
 
-/** The station the cook would use now: the tile in front of them, else the nearest one beside them. */
+/** The station the cook would use now: the tile just ahead of them, else the one beside them. */
 export function facingStation(player, kitchen) {
   const probe = TILE * 0.62;
   const ahead = tileAt(player.x + player.fx * probe, player.y + player.fy * probe);
   const front = stationAt(kitchen, ahead.c, ahead.r);
   if (front && front.type !== 'decor') return front;
-  const ax = Math.abs(player.fx) >= Math.abs(player.fy);
+  // Else the neighbour along the main axis the cook faces.
   const here = tileAt(player.x, player.y);
-  const tries = ax
-    ? [[Math.sign(player.fx), 0], [0, Math.sign(player.fy) || 1], [0, -(Math.sign(player.fy) || 1)]]
-    : [[0, Math.sign(player.fy)], [Math.sign(player.fx) || 1, 0], [-(Math.sign(player.fx) || 1), 0]];
-  for (const [dc, dr] of tries.slice(0, 1)) {
-    const s = stationAt(kitchen, here.c + dc, here.r + dr);
-    if (s && s.type !== 'decor') return s;
-  }
-  return null;
+  const [dc, dr] = Math.abs(player.fx) >= Math.abs(player.fy) ? [Math.sign(player.fx), 0] : [0, Math.sign(player.fy)];
+  const side = stationAt(kitchen, here.c + dc, here.r + dr);
+  return side && side.type !== 'decor' ? side : null;
 }
 
-export function playerTile(player) {
-  return { c: Math.floor((player.x - GRID_X) / TILE), r: Math.floor((player.y - GRID_Y) / TILE) };
-}
