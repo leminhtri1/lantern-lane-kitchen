@@ -1,6 +1,7 @@
 // Play the real game in headless Chrome: start night 1 from the title, cook and serve a Lantern
-// Noodle Soup with mouse clicks only, try the keyboard (walk, use, pause), run the clock out and
-// reach the results screen, failing on any page error. `node tools/playtest.mjs`.
+// Noodle Soup with mouse clicks only, try the keyboard (walk, use, pause), serve a ticket with an
+// extra, run the clock out, buy an upgrade on the results screen and start the next night, failing
+// on any page error. `node tools/playtest.mjs`.
 import { writeFileSync } from 'node:fs';
 import { launchChrome, serveGame, sleep, waitFor, watchErrors } from './cdp.mjs';
 
@@ -27,9 +28,9 @@ async function click(c, r) {
   await sleep(80);
 }
 
-const KEYS = { Enter: 13, Space: 32, ArrowRight: 39, ArrowLeft: 37, ArrowUp: 38, ArrowDown: 40, KeyP: 80 };
+const KEYS = { Enter: 13, Space: 32, ArrowRight: 39, ArrowLeft: 37, ArrowUp: 38, ArrowDown: 40, KeyP: 80, Tab: 9, Digit2: 50 };
 async function key(code, holdMs = 60) {
-  const base = { code, key: code === 'Space' ? ' ' : code.replace('Key', ''), windowsVirtualKeyCode: KEYS[code] };
+  const base = { code, key: code === 'Space' ? ' ' : code.replace(/Key|Digit/, ''), windowsVirtualKeyCode: KEYS[code] };
   await client.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base });
   await sleep(holdMs);
   await client.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base });
@@ -98,13 +99,24 @@ try {
   await key('KeyP');
   check((await value('window.__lantern.screen')) === 'play', 'P resumes');
 
-  // Run the clock out.
-  await value('window.__lantern.state.timeLeft = 1.5, true');
+  // Ticket extras: a "No scallion" soup takes noodles and egg only, and the route guide follows it after Tab.
+  await value(`(() => { const s = window.__lantern.state; s.orders = s.orders.filter((o) => !o.outcome); s.orders.push({ id: 900, recipe: 'soup', extra: { label: 'No scallion', add: false, key: 'scallion:chopped' }, parts: ['noodles:boiled', 'egg:boiled'], patience: 60, maxPatience: 60, age: 1, customer: 2, leaving: 0, outcome: null, vip: false, critic: false, table: 0 }); s.player.held = { kind: 'plate', items: [{ kind: 'item', ing: 'noodles', state: 'boiled', progress: 0 }, { kind: 'item', ing: 'egg', state: 'boiled', progress: 0 }] }; return true; })()`);
+  for (let i = 0; i < 6 && (await value('window.__lantern.state.focusId')) !== 900; i += 1) await key('Tab');
+  check((await value('window.__lantern.state.focusId')) === 900, 'Tab moves the route guide to the extras ticket');
+  const servedBefore = await value('window.__lantern.state.served');
+  await click(11, 2);
+  check((await value('window.__lantern.state.served')) === servedBefore + 1, 'a no-scallion soup is served to the ticket that asked for it');
+
+  // Run the clock out with coins to bank, then buy the Sharp cleaver (key 2) on the results screen.
+  await value('window.__lantern.state.coins = 200, window.__lantern.state.timeLeft = 1.5, true');
   await waitFor(client, 'window.__lantern.screen === "results"', 8000);
   check(true, 'shift ended on the results screen');
+  await key('Digit2');
+  check((await value('JSON.parse(localStorage.getItem("kite-street-night-market/v2")).perks.includes("knife")')) === true, 'bought the Sharp cleaver upgrade with banked coins');
   await key('Enter');
   await waitFor(client, 'window.__lantern.screen === "play"');
   check(true, 'next shift started from results');
+  check((await value('window.__lantern.state.perks.has("knife")')) === true, 'the next night runs with the upgrade');
 } catch (error) {
   console.error(error.message);
   failed = true;

@@ -105,7 +105,7 @@ function pathPoints(state, stops) {
 
 /** The dotted, marching path from the cook through every stop. */
 export function drawRoutePath(ctx, state, plan, t) {
-	if (!plan?.stops.length) return;
+	if (!plan?.stops.length) return [];
 	const pts = pathPoints(state, plan.stops);
 	ctx.save();
 	let carry = (t * 40) % 18;
@@ -123,6 +123,7 @@ export function drawRoutePath(ctx, state, plan, t) {
 		if (carry < 0) carry += 18;
 	}
 	ctx.restore();
+	return pts;
 }
 
 /** Step numbers on the stations the plan visits. */
@@ -168,9 +169,14 @@ export function sharedParts(orders) {
 	return new Map([...count].filter(([, n]) => n > 1));
 }
 
-/** The plan card on the floor: which ticket, its stops in order, and what to batch. */
-export function drawRouteCard(ctx, state, plan, x, y, w, h, t) {
+/** The plan card on the floor band (front or back) the path crosses least: the ticket, its stops, what to batch. */
+export function drawRouteCard(ctx, state, plan, pts, t) {
 	if (!plan) return;
+	const x = 220;
+	const w = 604;
+	const h = 142;
+	const hits = (y0) => pts.filter((p) => p.x > x && p.x < x + w && p.y > y0 && p.y < y0 + h).length;
+	const y = hits(538) <= hits(246) ? 538 : 246;
 	const { order } = plan;
 	rrect(ctx, x + 3, y + 5, w, h, 14, 'rgba(0,0,0,0.35)');
 	rrect(ctx, x, y, w, h, 14, 'rgba(36,16,8,0.9)');

@@ -26,6 +26,10 @@ export function applyFeedback(state) {
 			case 'pickup':
 			case 'place':
 				emit(fx, random, 'steam', p.x, p.y - 10, 3, { speed: 25, life: 0.35, size: 6 });
+				if (e.what?.kind === 'plate' && e.what.items.length) {
+					emit(fx, random, 'spark', p.x, p.y - 12, 7, { colors: ['#fff4b0', '#ffffff'], speed: 90, life: 0.45, size: 6 });
+					fx.shake = Math.max(fx.shake, 0.06);
+				}
 				break;
 			case 'cooked':
 				emit(fx, random, 'spark', p.x, p.y - 20, 10, { color: '#c8ff8a', speed: 100, life: 0.6, size: 7 });
@@ -52,6 +56,8 @@ export function applyFeedback(state) {
 				floatText(fx, p.x - 30, p.y - 50, `+${e.coins}`, '#ffd85e', 34, 1.5);
 				if (e.combo > 1) floatText(fx, p.x - 30, p.y - 10, `Combo x${e.combo}`, '#ff9fd0', 22, 1.4);
 				if (e.vip) floatText(fx, p.x - 30, p.y + 24, 'VIP pays double!', '#ffe066', 20, 1.6);
+				if (e.critic) floatText(fx, p.x - 30, p.y + 24, 'Critic: ★★★ pays triple!', '#d9b8ff', 20, 1.8);
+				if (e.table) floatText(fx, p.x - 30, p.y + 52, `Table served! +${e.table}`, '#8fe0ff', 20, 1.8);
 				fx.flash = 0.35;
 				fx.flashColor = '#fff3c4';
 				fx.coinPop = 1;

@@ -1,6 +1,6 @@
 [
   { "name": "1-rush.jpg", "query": "?shot=rush&seed=3" },
-  { "name": "2-rush-hour.jpg", "query": "?shot=rush-hour&seed=5" },
+  { "name": "2-last-call.jpg", "query": "?shot=last-call&seed=5" },
   { "name": "3-recipes.jpg", "query": "?shot=recipes&seed=4" },
   { "name": "4-results.jpg", "query": "?shot=results&seed=2" }
 ]

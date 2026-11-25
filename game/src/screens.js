@@ -144,7 +144,7 @@ function drawControls(ctx, y) {
 	ctx.fillText('Cook several things at once: a pot, wok, steamer or grill holds three. Serve fast for tips; serve in a row for a combo. Food left on the heat burns.', VIEW_W / 2, y + 44);
 }
 
-export function drawRecipeCard(ctx, id, x, y, w, h, t) {
+export function drawRecipeCard(ctx, id, x, y, w, h, t, menu) {
 	const recipe = RECIPES[id];
 	panel(ctx, x, y, w, h, '#fff4dc');
 	drawDish(ctx, id, x + 70, y + h / 2 + 4, 50, t, true);
@@ -164,10 +164,21 @@ export function drawRecipeCard(ctx, id, x, y, w, h, t) {
 			tx += 28;
 		}
 		ctx.fillText('›', tx - 8, py);
+		const shared = menu.filter((m) => RECIPES[m].parts.includes(part)).length;
+		if (shared > 1) {
+			circle(ctx, tx + 18, py, 16, 'rgba(120,200,90,0.35)');
+			ctx.strokeStyle = '#3f9a2c';
+			ctx.lineWidth = 2;
+			ctx.stroke();
+			rrect(ctx, x + w - 84, py - 10, 70, 20, 10, '#3f9a2c');
+			text(ctx, `in ${shared} dishes`, x + w - 49, py + 1, `bold 12px ${FONT}`, '#fff');
+			ctx.fillStyle = '#6a3a1e';
+			ctx.textAlign = 'left';
+		}
 		drawIngredient(ctx, { kind: 'item', ing, state }, tx + 18, py, 32);
 		ctx.fillStyle = '#6a3a1e';
 		ctx.font = `14px ${FONT}`;
-		ctx.fillText(`${INGREDIENTS[ing].name}: ${route.map((tool) => TOOL_VERBS[tool]).join(', then ')}`, x + 338, py + 1);
+		ctx.fillText(`${INGREDIENTS[ing].name}: ${route.map((tool) => TOOL_VERBS[tool]).join(' › ')}`, x + 338, py + 1);
 	});
 	ctx.fillStyle = '#a8701e';
 	ctx.font = `bold 14px ${FONT}`;
@@ -181,7 +192,7 @@ export function drawPause(ctx, state, t) {
 	text(ctx, 'Paused · Recipe Book', VIEW_W / 2, 70, `bold 46px ${TITLE_FONT}`, '#ffe9b0');
 	ctx.fillStyle = '#ffcf8a';
 	ctx.font = `16px ${FONT}`;
-	ctx.fillText('Each part shows its route: the raw ingredient, the tools in order, and how it goes on the plate.', VIEW_W / 2, 112);
+	ctx.fillText('Each part: raw ingredient › tools in order › plated. Green parts go in several dishes, so prep them in a batch.', VIEW_W / 2, 112);
 	const menu = state.menu;
 	const cols = menu.length > 4 ? 2 : 1;
 	const w = cols === 2 ? 560 : 600;
@@ -190,12 +201,12 @@ export function drawPause(ctx, state, t) {
 		const col = cols === 2 ? i % 2 : 0;
 		const row = cols === 2 ? Math.floor(i / 2) : i;
 		const x = cols === 2 ? VIEW_W / 2 - w - 12 + col * (w + 24) : VIEW_W / 2 - w / 2;
-		drawRecipeCard(ctx, id, x, 138 + row * (h + 12), w, h, t);
+		drawRecipeCard(ctx, id, x, 138 + row * (h + 12), w, h, t, menu);
 	});
 	ctx.fillStyle = '#fff2d8';
 	ctx.font = `bold 18px ${FONT}`;
 	ctx.textAlign = 'center';
-	ctx.fillText('P / Esc / click to keep cooking · Q to leave the night', VIEW_W / 2, VIEW_H - 22);
+	ctx.fillText('Tickets may ask for extras: no scallion, double egg, add shrimp…  ·  P / Esc to cook on  ·  Q to leave', VIEW_W / 2, VIEW_H - 22);
 }
 
 export function upgradeRects() {

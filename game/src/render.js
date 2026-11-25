@@ -48,8 +48,7 @@ export function createRenderer(canvas) {
 		const plan = focus ? planRoute(state, focus) : null;
 		ctx.drawImage(staticLayer(kitchen), 0, 0);
 		if (plan) {
-			drawRoutePath(ctx, state, plan, t);
-			drawRouteCard(ctx, state, plan, 220, 532, 604, 154, t);
+			drawRouteCard(ctx, state, plan, drawRoutePath(ctx, state, plan, t), t);
 		}
 		drawNightSky(ctx, state.nightIndex, t);
 		drawCustomers(ctx, state.orders, t);

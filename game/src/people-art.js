@@ -114,7 +114,15 @@ function drawCustomer(ctx, order, x, y, t) {
 	ctx.beginPath();
 	ctx.arc(cx, y - 16, 15, 0, TAU);
 	ctx.fill();
-	ctx.fillStyle = order.vip ? '#f2c14e' : HATS[order.customer % HATS.length];
+	if (order.critic) {
+		oval(ctx, cx + 2, y - 30, 19, 7, '#4a2a7a');
+		circle(ctx, cx + 4, y - 37, 3, '#4a2a7a');
+		rrect(ctx, cx + 10, y - 2, 14, 18, 2, '#fffbe8');
+		ctx.strokeStyle = '#c8a050';
+		ctx.lineWidth = 1.5;
+		ctx.strokeRect(cx - 12, y - 18, 8, 8);
+	}
+	ctx.fillStyle = order.vip ? '#f2c14e' : order.critic ? '#4a2a7a' : HATS[order.customer % HATS.length];
 	ctx.beginPath();
 	ctx.arc(cx, y - 20, 15.5, Math.PI, TAU);
 	ctx.fill();

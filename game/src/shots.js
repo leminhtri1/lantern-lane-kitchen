@@ -1,4 +1,4 @@
-// The deterministic screenshot scenes behind ?shot=rush|rush-hour|recipes|results.
+// The deterministic screenshot scenes behind ?shot=rush|last-call|recipes|results.
 import { STEP } from './config.js';
 import { createRandom } from './random.js';
 import { createShift } from './shift.js';
@@ -123,37 +123,40 @@ function stageRush(seed) {
 	return { state, screen: 'play', ui: { time: 0 } };
 }
 
-function stageRushHour(seed) {
+function stageLastCall(seed) {
 	const state = createShift(3, createRandom(seed));
-	state.timeLeft = 106;
+	state.timeLeft = 24;
 	state.rushAnnounced = true;
-	state.banner = { text: 'Rush hour!', sub: 'The lanterns are lit and the street is full', time: 1.2 };
-	state.coins = 168;
-	state.combo = 4;
-	state.bestCombo = 4;
+	state.banner = null;
+	state.coins = 318;
+	state.combo = 5;
+	state.bestCombo = 6;
 	setOrders(state, [
-		['shrimpsoup', 0.3],
-		['dumplings', 0.5],
-		['mango', 0.64],
-		['bao', 0.8],
-		['friedrice', 0.96],
+		['shrimpsoup', 0.3, { table: 5 }],
+		['mango', 0.52, { table: 5, extra: extraByLabel('mango', 'Extra mango') }],
+		['friedrice', 0.62, { critic: true }],
+		['soup', 0.78, { extra: extraByLabel('soup', 'Add shrimp') }],
+		['dumplings', 0.95],
 	]);
-	state.orders[3].vip = true;
+	state.focusId = state.orders[1].id;
+	cook(state, 1, 0, 'noodles', 'raw', 1.1);
+	cook(state, 1, 0, 'egg', 'raw', 1.1);
 	cook(state, 4, 0, 'rice', 'raw', 0.7);
 	cook(state, 4, 0, 'egg', 'raw', 0.7);
-	cook(state, 2, 0, 'noodles', 'raw', 0.3);
-	cook(state, 7, 0, 'rice', 'raw', 0.85);
 	cook(state, 8, 0, 'pork', 'chopped', 0.5);
 	cook(state, 8, 0, 'cabbage', 'chopped', 0.5);
-	cook(state, 10, 0, 'shrimp', 'raw', 2.4);
-	at(state, 5, 3).held = plate('bun:steamed');
-	at(state, 6, 3).held = item('mango', 'chopped');
-	at(state, 3, 3).held = item('noodles');
-	at(state, 9, 6).held = item('mushroom', 'raw', 0.3);
-	at(state, 7, 6).held = item('scallion', 'chopped');
-	state.player.held = plate('noodles:boiled', 'shrimp:grilled', 'scallion:chopped');
-	placeCook(state, 10, 2, 1, 0, 30);
-	settle(state, 1.6);
+	cook(state, 9, 0, 'shrimp', 'raw', 0.8);
+	cook(state, 10, 0, 'shrimp', 'raw', 1.4);
+	at(state, 5, 3).held = plate('rice:steamed');
+	at(state, 7, 3).held = plate('noodles:boiled', 'scallion:chopped');
+	at(state, 4, 3).held = item('scallion', 'chopped');
+	at(state, 3, 3).held = item('egg');
+	state.player.held = item('mango');
+	placeCook(state, 9, 5, 0, 1, 0);
+	settle(state, 1.2);
+	const hatch = tileCenter(11, 2);
+	floatText(state.fx, hatch.x - 40, hatch.y + 10, 'Table served! +20', '#8fe0ff', 20, 1.5);
+	updateEffects(state.fx, 0.1);
 	return { state, screen: 'play', ui: { time: 0 } };
 }
 
@@ -194,7 +197,7 @@ function stageResults(seed) {
 }
 
 export function stageShot(name, seed) {
-	if (name === 'rush-hour') return stageRushHour(seed);
+	if (name === 'last-call') return stageLastCall(seed);
 	if (name === 'recipes') return stageRecipeBook(seed);
 	if (name === 'results') return stageResults(seed);
 	return stageRush(seed);
