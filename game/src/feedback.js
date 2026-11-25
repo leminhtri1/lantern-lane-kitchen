@@ -1,6 +1,4 @@
-// Turns what happened this step (the shift's events) into things you can see at once: chop bits
-// flying off the board, steam and flames over busy stations, smoke before something burns, coins
-// popping at the hatch, and a word from the cook when a move does not work.
+// Turns what happened this step (the shift's events) into things you can see at once.
 import { TILE } from './config.js';
 import { INGREDIENTS } from './ingredients.js';
 import { isCookStation, tileCenter } from './kitchen-layout.js';

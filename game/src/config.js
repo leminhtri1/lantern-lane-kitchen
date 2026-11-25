@@ -1,5 +1,4 @@
-// Shared numbers: the logical canvas, the kitchen grid, the fixed step and the timings that set
-// how a shift feels. Every other module reads these instead of hard-coding its own.
+// Shared numbers: canvas size, kitchen grid, fixed step and shift timings.
 
 export const VIEW_W = 1280;
 export const VIEW_H = 800;

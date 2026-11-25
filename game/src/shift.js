@@ -1,6 +1,4 @@
-// One night at the stall: the whole game state and the fixed step that advances it. A shift reads
-// plain controls ({ dir, usePressed, useHeld, clicks }), moves the cook, runs the stations and the
-// ticket rail, and records what happened in `events` for sound and effects.
+// One night at the stall: its state and the fixed step that advances it.
 import { SHIFT_SECONDS } from './config.js';
 import { createKitchen } from './kitchen-layout.js';
 import { NIGHTS } from './recipes.js';
@@ -12,10 +10,11 @@ import { addOrder, isRushHour, updateOrders } from './orders.js';
 import { createEffects, updateEffects } from './effects.js';
 import { ambientEffects, applyFeedback } from './feedback.js';
 
-export function createShift(nightIndex, random) {
+export function createShift(nightIndex, random, perks = []) {
 	const night = NIGHTS[nightIndex];
 	const state = {
 		nightIndex,
+		perks: new Set(perks),
 		night,
 		menu: night.menu,
 		random,
@@ -41,7 +40,7 @@ export function createShift(nightIndex, random) {
 		autoChop: false,
 		over: false,
 	};
-	addOrder(state, night.menu[0]);
+	addOrder(state, night.menu[0], { extra: null });
 	return state;
 }
 

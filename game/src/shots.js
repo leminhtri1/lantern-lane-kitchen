@@ -1,12 +1,11 @@
-// The screenshot scenes behind ?shot=rush|rush-hour|recipes|results|title. Each builds a real shift with the
-// game's own rules and art, puts food where a busy cook would have it (the same seed always gives
-// the same frame), lets steam, flames and chop bits play out for a moment, and returns the scene.
+// The deterministic screenshot scenes behind ?shot=rush|rush-hour|recipes|results.
 import { STEP } from './config.js';
 import { createRandom } from './random.js';
 import { createShift } from './shift.js';
 import { stationAt, tileCenter } from './kitchen-layout.js';
 import { addToCook } from './stations.js';
 import { addOrder } from './orders.js';
+import { extraByLabel } from './modifiers.js';
 import { emit, floatText, updateEffects } from './effects.js';
 import { ambientEffects, applyFeedback } from './feedback.js';
 import { facingStation } from './player.js';
@@ -34,8 +33,8 @@ function cook(state, c, r, ing, from, progress) {
 
 function setOrders(state, list) {
 	state.orders = [];
-	for (const [recipe, share] of list) {
-		const order = addOrder(state, recipe, share);
+	for (const [recipe, share, opts] of list) {
+		const order = addOrder(state, recipe, { share, extra: null, ...opts });
 		order.age = 5;
 	}
 	state.events = [];
@@ -86,33 +85,30 @@ function stageRush(seed) {
 	state.served = 7;
 	setOrders(state, [
 		['skewers', 0.17],
-		['friedrice', 0.4],
-		['dumplings', 0.55],
-		['soup', 0.74],
-		['bao', 0.93],
+		['friedrice', 0.42, { extra: extraByLabel('friedrice', 'Double egg'), table: 2 }],
+		['dumplings', 0.5, { table: 2 }],
+		['bao', 0.7, { vip: true }],
+		['soup', 0.93, { extra: extraByLabel('soup', 'No scallion') }],
 	]);
-	state.orders[4].vip = true;
+	state.focusId = state.orders[3].id;
 	cook(state, 1, 0, 'noodles', 'raw', 0.62);
-	cook(state, 1, 0, 'egg', 'raw', 0.62);
-	cook(state, 2, 0, 'egg', 'raw', 1.15);
+	cook(state, 2, 0, 'egg', 'raw', 0.55);
+	cook(state, 2, 0, 'egg', 'raw', 0.55);
 	cook(state, 4, 0, 'rice', 'raw', 0.45);
 	cook(state, 4, 0, 'egg', 'raw', 0.45);
-	cook(state, 7, 0, 'pork', 'chopped', 0.3);
-	cook(state, 7, 0, 'bun', 'raw', 0.3);
-	cook(state, 8, 0, 'pork', 'chopped', 1.05);
-	cook(state, 8, 0, 'cabbage', 'chopped', 1.05);
+	cook(state, 4, 0, 'egg', 'raw', 0.45);
+	cook(state, 8, 0, 'cabbage', 'chopped', 0.85);
 	cook(state, 9, 0, 'chicken', 'chopped', 1.62);
 	cook(state, 9, 0, 'mushroom', 'raw', 1.62);
 	at(state, 3, 0).held = item('egg');
-	at(state, 6, 0).held = item('pork', 'chopped');
 	at(state, 4, 3).held = item('scallion', 'raw', 0.55);
-	at(state, 5, 3).held = plate('noodles:boiled', 'scallion:chopped');
+	at(state, 5, 3).held = plate('bun:steamed');
 	at(state, 6, 3).held = item('cabbage');
 	at(state, 7, 3).held = item('mango');
 	at(state, 3, 3).held = item('bun');
 	at(state, 11, 1).held = plate('pork:steamed', 'cabbage:steamed');
 	at(state, 11, 4).held = plate('chicken:grilled', 'mushroom:grilled');
-	at(state, 8, 6).held = item('rice');
+	at(state, 9, 6).held = item('mushroom', 'chopped');
 	placeCook(state, 4, 2, 0, 1, 14);
 	state.player.chopping = at(state, 4, 3);
 	const board = at(state, 4, 3);
@@ -194,20 +190,12 @@ function stageResults(seed) {
 	at(state, 5, 3).held = plate('rice:steamed', 'mango:chopped');
 	placeCook(state, 6, 4, 0, -1);
 	settle(state, 1.2);
-	return { state, screen: 'results', ui: { time: 2, age: 5, stars: 2, canAdvance: true, newUnlock: true } };
-}
-
-function stageTitle(seed) {
-	const state = createShift(0, createRandom(seed));
-	dressKitchen(state);
-	state.timeLeft = state.duration;
-	return { state, screen: 'title', ui: { time: 1.2, selected: 2, unlocked: 3, stars: [3, 2, 1] } };
+	return { state, screen: 'results', ui: { time: 2, age: 5, stars: 2, canAdvance: true, newUnlock: true, bank: 412, perks: ['knife'] } };
 }
 
 export function stageShot(name, seed) {
 	if (name === 'rush-hour') return stageRushHour(seed);
 	if (name === 'recipes') return stageRecipeBook(seed);
 	if (name === 'results') return stageResults(seed);
-	if (name === 'title') return stageTitle(seed);
 	return stageRush(seed);
 }

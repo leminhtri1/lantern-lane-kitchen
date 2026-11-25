@@ -1,5 +1,4 @@
-// Click-to-walk: a breadth-first search over floor tiles from the cook's tile to the nearest floor
-// tile next to the clicked station (or to the clicked floor tile itself).
+// Click-to-walk: a breadth-first search over floor tiles.
 import { COLS, ROWS } from './config.js';
 import { isFloor } from './kitchen-layout.js';
 

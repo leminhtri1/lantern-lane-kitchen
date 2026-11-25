@@ -1,5 +1,4 @@
-// Canvas primitives shared by every art module: filled circles, ovals and rounded boxes,
-// gradients from colour stops, and one-call text.
+// Canvas primitives shared by every art module.
 
 export const TAU = Math.PI * 2;
 
@@ -42,4 +41,12 @@ export function text(ctx, str, x, y, style, fill, align = 'center', baseline = '
 	ctx.textAlign = align;
 	ctx.textBaseline = baseline;
 	ctx.fillText(str, x, y);
+}
+
+/** A polyline through flat [x0, y0, x1, y1, …] points, stroked (or filled) with the current style. */
+export function path(ctx, pts, fill) {
+	ctx.beginPath();
+	for (let i = 0; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
+	if (fill) ctx.fill();
+	else ctx.stroke();
 }

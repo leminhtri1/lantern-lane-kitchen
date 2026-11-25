@@ -1,14 +1,11 @@
-// The stall itself: wet street and string lights, warm floor tiles, honey-wood counters with red
-// lacquer fronts, and each station drawn so it reads at a glance (steel broth pots, a black wok
-// over flame, bamboo steamers, a charcoal grill, crates of produce, the plate stack, the bin and
-// the serving hatch). Station contents, progress rings and burn warnings are drawn here too.
+// The stall's art: counters and stations, what sits on them, progress rings and burn alarms.
 import { COLS, FONT, GRID_X, GRID_Y, ROWS, STREET_X, TILE, VIEW_H, VIEW_W } from './config.js';
 import { INGREDIENTS, canChop, newItem } from './ingredients.js';
 import { isCookStation, stationAt } from './kitchen-layout.js';
 import { cookStatus } from './stations.js';
 import { matchRecipe, plateKeys } from './recipes.js';
 import { drawIngredient, drawPlated } from './food-art.js';
-import { TAU, circle, oval, radial, rrect, text } from './paint.js';
+import { TAU, circle, oval, path, radial, rrect, text } from './paint.js';
 
 const FRONT = 18;
 const LABELS = { pot: 'BROTH POT', wok: 'WOK', steamer: 'STEAMER', grill: 'GRILL', board: 'CHOP', plates: 'PLATES', trash: 'BIN' };
@@ -44,51 +41,12 @@ function streetLantern(ctx, x, y) {
 	ctx.fillRect(x - 60, y - 60, 120, 120);
 	ctx.strokeStyle = '#1a0e08';
 	ctx.lineWidth = 2;
-	ctx.beginPath();
-	ctx.moveTo(x + 12, y - 30);
-	ctx.lineTo(x, y - 16);
-	ctx.stroke();
+	path(ctx, [x + 12, y - 30, x, y - 16], false);
 	const body = radial(ctx, x - 4, y - 5, 2, x, y, 16, ['#ffc08a', '#e0402c', '#8a1a14']);
 	oval(ctx, x, y, 13, 16, body);
 	ctx.fillStyle = '#e8b85a';
 	ctx.fillRect(x - 6, y - 18, 12, 4);
 	ctx.fillRect(x - 6, y + 14, 12, 4);
-}
-
-function drawRug(ctx, x, y, w, h) {
-	rrect(ctx, x + 4, y + 6, w, h, 10, 'rgba(0,0,0,0.3)');
-	rrect(ctx, x, y, w, h, 10, '#7a1f1c');
-	ctx.strokeStyle = '#e0a84a';
-	ctx.lineWidth = 4;
-	ctx.beginPath();
-	ctx.roundRect(x + 8, y + 8, w - 16, h - 16, 6);
-	ctx.stroke();
-	ctx.strokeStyle = 'rgba(224,168,74,0.55)';
-	ctx.lineWidth = 2;
-	ctx.beginPath();
-	ctx.roundRect(x + 16, y + 16, w - 32, h - 32, 4);
-	ctx.stroke();
-	const my = y + h / 2;
-	ctx.strokeStyle = 'rgba(224,168,74,0.5)';
-	ctx.lineWidth = 2;
-	ctx.beginPath();
-	ctx.moveTo(x + 30, my);
-	ctx.lineTo(x + w - 30, my);
-	ctx.stroke();
-	for (let lx = x + 70; lx < x + w - 40; lx += 92) {
-		circle(ctx, lx, my, 17, '#e0a84a');
-		circle(ctx, lx, my, 12, '#a82c24');
-		ctx.fillStyle = '#e0a84a';
-		ctx.fillRect(lx - 5, my - 5, 10, 10);
-		ctx.fillStyle = '#8c2420';
-		ctx.fillRect(lx - 2.5, my - 2.5, 5, 5);
-		ctx.save();
-		ctx.translate(lx + 46, my);
-		ctx.rotate(Math.PI / 4);
-		ctx.fillStyle = 'rgba(224,168,74,0.75)';
-		ctx.fillRect(-5, -5, 10, 10);
-		ctx.restore();
-	}
 }
 
 function drawFloor(ctx) {
@@ -124,7 +82,6 @@ function drawFloor(ctx) {
 		ctx.fillStyle = 'rgba(40,18,6,0.55)';
 		ctx.fillRect(x0, y + plank - 2, w, 2);
 	}
-	drawRug(ctx, GRID_X + TILE * 2 + 20, GRID_Y + TILE * 4 + 14, TILE * 7 - 40, TILE * 2 - 30);
 	for (const [lx, ly] of [
 		[330, 320],
 		[600, 600],
@@ -186,7 +143,7 @@ function drawCounterBody(ctx, kitchen, station) {
 		ctx.fillRect(x, y + TILE, TILE, 6);
 		const label = LABELS[station.type];
 		if (label) {
-			text(ctx, label, x + TILE / 2, y + topH + FRONT / 2 + 1.5, `bold 11px ${FONT}`, '#ffe2a0', 'center', 'middle');
+			text(ctx, label, x + TILE / 2, y + topH + FRONT / 2 + 1.5, `bold 11px ${FONT}`, '#ffe2a0');
 		}
 	}
 	const right = stationAt(kitchen, station.c + 1, station.r);
@@ -235,10 +192,7 @@ function drawBoard(ctx, station) {
 	ctx.strokeStyle = 'rgba(150,95,40,0.35)';
 	ctx.lineWidth = 1.2;
 	for (let i = 0; i < 4; i += 1) {
-		ctx.beginPath();
-		ctx.moveTo(cx - 30, cy - 16 + i * 11);
-		ctx.lineTo(cx + 28, cy - 14 + i * 11);
-		ctx.stroke();
+		path(ctx, [cx - 30, cy - 16 + i * 11, cx + 28, cy - 14 + i * 11], false);
 	}
 }
 
@@ -290,7 +244,7 @@ function drawTrash(ctx, station) {
 	ctx.stroke();
 }
 
-function drawHatch(ctx, kitchen, station) {
+function drawHatch(ctx, station, kitchen) {
 	const { x, y } = tileBox(station.c, station.r);
 	const first = stationAt(kitchen, station.c, station.r - 1)?.type !== 'serve';
 	const g = ctx.createLinearGradient(x, y, x + TILE, y);
@@ -324,7 +278,7 @@ function drawHatch(ctx, kitchen, station) {
 		ctx.save();
 		ctx.translate(x + TILE / 2, y + TILE / 2 - 6);
 		rrect(ctx, -28, -14, 56, 28, 6, '#fff2d2');
-		text(ctx, 'SERVE', 0, 1, `bold 15px ${FONT}`, '#9b2a22', 'center', 'middle');
+		text(ctx, 'SERVE', 0, 1, `bold 15px ${FONT}`, '#9b2a22');
 		ctx.restore();
 	}
 }
@@ -336,10 +290,7 @@ function drawDecor(ctx, station) {
 		ctx.strokeStyle = '#d8b07a';
 		ctx.lineWidth = 3;
 		for (let i = 0; i < 5; i += 1) {
-			ctx.beginPath();
-			ctx.moveTo(cx - 22 + i * 4, cy - 8);
-			ctx.lineTo(cx - 26 + i * 6, cy - 32);
-			ctx.stroke();
+			path(ctx, [cx - 22 + i * 4, cy - 8, cx - 26 + i * 6, cy - 32], false);
 		}
 		rrect(ctx, cx + 6, cy - 18, 18, 38, 6, '#5a1a10');
 		ctx.fillStyle = '#f2d36b';
@@ -353,30 +304,13 @@ function drawDecor(ctx, station) {
 	}
 }
 
-function drawStationBase(ctx, kitchen, station) {
-	switch (station.type) {
-		case 'crate':
-			return drawCrate(ctx, station);
-		case 'board':
-			return drawBoard(ctx, station);
-		case 'plates':
-			return drawPlateStack(ctx, station);
-		case 'trash':
-			return drawTrash(ctx, station);
-		case 'serve':
-			return drawHatch(ctx, kitchen, station);
-		case 'decor':
-			return drawDecor(ctx, station);
-		default:
-			return undefined;
-	}
-}
+const BASES = { crate: drawCrate, board: drawBoard, plates: drawPlateStack, trash: drawTrash, serve: drawHatch, decor: drawDecor };
 
 export function drawStaticKitchen(ctx, kitchen) {
 	drawStreet(ctx);
 	drawFloor(ctx);
 	for (const station of kitchen.stations) if (station.type !== 'serve') drawCounterBody(ctx, kitchen, station);
-	for (const station of kitchen.stations) drawStationBase(ctx, kitchen, station);
+	for (const station of kitchen.stations) BASES[station.type]?.(ctx, station, kitchen);
 	ctx.fillStyle = '#2a1610';
 	ctx.fillRect(GRID_X, GRID_Y - 8, COLS * TILE, 8);
 }
@@ -469,10 +403,7 @@ function drawSteamer(ctx, station, t) {
 	ctx.strokeStyle = 'rgba(60,110,30,0.6)';
 	ctx.lineWidth = 1.5;
 	for (let i = -2; i <= 2; i += 1) {
-		ctx.beginPath();
-		ctx.moveTo(cx + i * 10, cy - 22);
-		ctx.lineTo(cx + i * 10, cy + 22);
-		ctx.stroke();
+		path(ctx, [cx + i * 10, cy - 22, cx + i * 10, cy + 22], false);
 	}
 	itemSlots(station.items.length, cx, cy, 28).forEach(([x, y], i) => drawIngredient(ctx, station.items[i], x, y, 32));
 	if (busy) {
@@ -501,19 +432,24 @@ function drawGrill(ctx, station, t) {
 	ctx.strokeStyle = '#c9ced6';
 	ctx.lineWidth = 3;
 	for (let i = 0; i < 7; i += 1) {
-		ctx.beginPath();
-		ctx.moveTo(cx - 36 + i * 12, cy - 26);
-		ctx.lineTo(cx - 36 + i * 12, cy + 26);
-		ctx.stroke();
+		path(ctx, [cx - 36 + i * 12, cy - 26, cx - 36 + i * 12, cy + 26], false);
 	}
 	itemSlots(station.items.length, cx, cy, 30).forEach(([x, y], i) => drawIngredient(ctx, station.items[i], x, y, 38));
 }
 
-function drawHeldThing(ctx, thing, x, y, t, menu) {
+function drawHeldThing(ctx, thing, x, y, t, specs) {
 	if (thing.kind === 'plate') {
-		drawPlated(ctx, plateKeys(thing), x, y, 37, t);
-		if (thing.items.length && matchRecipe(thing, menu)) drawReadyTag(ctx, x, y - 38, t);
-	} else drawIngredient(ctx, thing, x, y, 52);
+		const done = thing.items.length && matchRecipe(thing, specs);
+		if (done) {
+			ctx.save();
+			ctx.shadowColor = 'rgba(255,230,120,0.95)';
+			ctx.shadowBlur = 18 + 6 * Math.sin(t * 5);
+			circle(ctx, x, y, 40, 'rgba(255,240,170,0.5)');
+			ctx.restore();
+		}
+		drawPlated(ctx, plateKeys(thing), x, y, 40, t);
+		if (done) drawReadyTag(ctx, x, y - 40, t);
+	} else drawIngredient(ctx, thing, x, y, 54);
 }
 
 function drawReadyTag(ctx, x, y, t) {
@@ -522,10 +458,10 @@ function drawReadyTag(ctx, x, y, t) {
 	ctx.strokeStyle = '#d9ffd0';
 	ctx.lineWidth = 2;
 	ctx.stroke();
-	text(ctx, 'READY ✓', x, y + 1 + bob, `bold 13px ${FONT}`, '#ffffff', 'center', 'middle');
+	text(ctx, 'READY ✓', x, y + 1 + bob, `bold 13px ${FONT}`, '#ffffff');
 }
 
-export function drawStationTop(ctx, station, t, menu, chopSwing) {
+export function drawStationTop(ctx, station, t, specs, chopSwing) {
 	const { cx, cy } = tileBox(station.c, station.r);
 	if (station.type === 'pot') drawPot(ctx, station, t);
 	else if (station.type === 'wok') drawWok(ctx, station, t);
@@ -538,7 +474,7 @@ export function drawStationTop(ctx, station, t, menu, chopSwing) {
 		ctx.globalAlpha = Math.min(1, p * 1.6);
 		drawIngredient(ctx, { ...thing, state: 'chopped' }, cx + 10, cy + 4, 30 + p * 16);
 		ctx.globalAlpha = 1;
-	} else if (thing) drawHeldThing(ctx, thing, cx, cy - 2, t, menu);
+	} else if (thing) drawHeldThing(ctx, thing, cx, cy - 2, t, specs);
 	if (station.type === 'board') drawCleaver(ctx, cx, cy, chopSwing);
 }
 
@@ -562,7 +498,7 @@ function badge(ctx, x, y, r, fill, label) {
 	ctx.strokeStyle = '#ffffff';
 	ctx.lineWidth = 2.5;
 	ctx.stroke();
-	text(ctx, label, x, y + 1, `bold ${Math.round(r * 1.3)}px ${FONT}`, '#ffffff', 'center', 'middle');
+	text(ctx, label, x, y + 1, `bold ${Math.round(r * 1.3)}px ${FONT}`, '#ffffff');
 }
 
 export function drawStationStatus(ctx, station, t) {
@@ -575,7 +511,7 @@ export function drawStationStatus(ctx, station, t) {
 		else if (st.warn > 0) {
 			const flash = Math.sin(t * (10 + st.warn * 14)) > 0;
 			ring(ctx, bx, by, 11, 1 - st.warn, flash ? '#ff3b2f' : '#ffb02e');
-			text(ctx, '!', bx, by + 1, `bold 15px ${FONT}`, '#ffffff', 'center', 'middle');
+			text(ctx, '!', bx, by + 1, `bold 15px ${FONT}`, '#ffffff');
 			if (flash) {
 				ctx.strokeStyle = 'rgba(255,60,40,0.8)';
 				ctx.lineWidth = 3;

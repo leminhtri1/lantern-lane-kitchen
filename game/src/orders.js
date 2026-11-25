@@ -1,8 +1,8 @@
-// The ticket rail: customers order from tonight's menu at a pace set by the rush curve, each
-// ticket's patience drains, a dish served fast earns a tip, back-to-back serves build a combo, and
-// a ticket that runs out costs coins and breaks the combo.
+// The ticket rail: arrivals, patience, VIPs, critics, tables of two, tips, combos and serving.
 import { MAX_TICKETS, MISS_PENALTY } from './config.js';
-import { RECIPES, matchRecipe } from './recipes.js';
+import { RECIPES, dishSpecs, matchRecipe, plateKeys, sameParts } from './recipes.js';
+import { EXTRA_PRICE, applyExtra, rollExtra } from './modifiers.js';
+import { perk } from './upgrades.js';
 
 function smooth(a, b, x) {
 	const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -23,7 +23,8 @@ export function isRushHour(state) {
 export function patienceFor(state, recipeId) {
 	const parts = RECIPES[recipeId].parts.length;
 	const night = state.nightIndex;
-	return (44 + 15 * parts) * (1 - 0.035 * night) * (isRushHour(state) ? 0.92 : 1);
+	const tea = perk(state, 'tea', 1.15);
+	return (44 + 15 * parts) * (1 - 0.035 * night) * (isRushHour(state) ? 0.92 : 1) * tea;
 }
 
 function pickRecipe(state) {
@@ -32,18 +33,25 @@ function pickRecipe(state) {
 	return pool[Math.floor(state.random() * pool.length)];
 }
 
-export function addOrder(state, recipeId = pickRecipe(state), patienceShare = 1, vip = false) {
-	const patience = patienceFor(state, recipeId) * (vip ? 0.8 : 1);
+/** opts: { share, vip, critic, table, extra } (extra: undefined rolls one, null forces none). */
+export function addOrder(state, recipeId = pickRecipe(state), opts = {}) {
+	const { share = 1, vip = false, critic = false, table = 0 } = opts;
+	const extra = opts.extra === undefined ? rollExtra(state, recipeId) : opts.extra;
+	const patience = patienceFor(state, recipeId) * (vip ? 0.8 : critic ? 0.75 : 1) * (table ? 1.15 : 1);
 	const order = {
 		id: state.orderSeq,
 		recipe: recipeId,
-		patience: patience * patienceShare,
+		extra,
+		parts: applyExtra(RECIPES[recipeId].parts, extra),
+		patience: patience * share,
 		maxPatience: patience,
 		age: 0,
 		customer: state.orderSeq % 7,
 		leaving: 0,
 		outcome: null,
 		vip,
+		critic,
+		table,
 	};
 	state.orderSeq += 1;
 	state.orders.push(order);
@@ -58,14 +66,27 @@ function nextGap(state) {
 	return gap * (0.8 + 0.4 * state.random());
 }
 
+/** A new arrival: one customer, a VIP or a critic, or from night 3 a table of two ordering a set. */
+function spawnCustomers(state, live) {
+	const r = state.random();
+	const n = state.nightIndex;
+	if (n >= 2 && live.length <= MAX_TICKETS - 2 && r < 0.22) {
+		state.tableSeq = (state.tableSeq ?? 0) + 1;
+		const table = (state.tableSeq % 8) + 1;
+		addOrder(state, pickRecipe(state), { table });
+		addOrder(state, pickRecipe(state), { table });
+		return;
+	}
+	const special = !live.some((o) => o.vip || o.critic);
+	if (n >= 3 && special && r > 0.88) addOrder(state, pickRecipe(state), { critic: true, extra: null });
+	else addOrder(state, pickRecipe(state), { vip: n >= 1 && special && r > 0.8 });
+}
+
 export function updateOrders(state, dt) {
 	const live = state.orders.filter((o) => !o.outcome);
 	state.nextOrderIn -= dt * (live.length === 0 ? 3 : 1);
 	if (state.nextOrderIn <= 0 && state.timeLeft > 8) {
-		if (live.length < MAX_TICKETS) {
-			const vip = state.nightIndex >= 1 && !live.some((o) => o.vip) && state.random() < 0.16;
-			addOrder(state, pickRecipe(state), 1, vip);
-		}
+		if (live.length < MAX_TICKETS) spawnCustomers(state, live);
 		state.nextOrderIn = nextGap(state);
 	}
 	for (const order of state.orders) {
@@ -86,32 +107,38 @@ export function updateOrders(state, dt) {
 	state.orders = state.orders.filter((o) => !o.outcome || o.leaving < 0.9);
 }
 
+/** Serve `plate` at the hatch: the most impatient ticket whose parts it matches takes it. */
 export function serveDish(state, plate, station) {
-	const recipeId = matchRecipe(plate, state.menu);
-	if (!recipeId) return { ok: false, reason: plate.items.length ? 'Not finished yet' : 'The plate is empty' };
-	let best = null;
-	for (const order of state.orders) {
-		if (order.outcome || order.recipe !== recipeId) continue;
-		if (!best || order.patience < best.patience) best = order;
+	const keys = plateKeys(plate);
+	const fits = state.orders.filter((o) => !o.outcome && sameParts(keys, o.parts));
+	if (!fits.length) {
+		const id = matchRecipe(plate, dishSpecs(state));
+		if (!id) return { ok: false, reason: plate.items.length ? 'Not finished yet' : 'The plate is empty' };
+		const asked = state.orders.find((o) => !o.outcome && o.recipe === id);
+		return { ok: false, reason: asked ? `Check the ticket: ${asked.extra?.label ?? 'as listed'}` : `Nobody ordered ${RECIPES[id].short}` };
 	}
-	if (!best) return { ok: false, reason: `Nobody ordered ${RECIPES[recipeId].short}` };
-	const recipe = RECIPES[recipeId];
+	const best = fits.reduce((a, b) => (b.patience < a.patience ? b : a));
+	const recipe = RECIPES[best.recipe];
 	const share = Math.max(0, best.patience / best.maxPatience);
-	const tip = Math.round(recipe.price * 0.6 * share) * (best.vip ? 2 : 1);
+	const mult = best.vip ? 2 : best.critic ? (share > 0.5 ? 3 : 1) : 1;
+	const price = recipe.price + (best.extra ? EXTRA_PRICE : 0);
+	const tip = Math.round(recipe.price * 0.6 * share * perk(state, 'tipjar', 1.5)) * (best.vip ? 2 : 1);
 	state.combo += 1;
 	state.bestCombo = Math.max(state.bestCombo, state.combo);
 	const comboBonus = Math.min(5, state.combo - 1) * 3;
-	const coins = recipe.price * (best.vip ? 2 : 1) + tip + comboBonus;
+	const half = (state.tableHalf ??= new Set());
+	const tableBonus = best.table && half.has(best.table) ? 20 : 0;
+	if (best.table) half.add(best.table);
+	const coins = price * mult + tip + comboBonus + tableBonus;
 	state.coins += coins;
 	state.served += 1;
-	state.servedLog.push(recipeId);
+	state.servedLog.push(best.recipe);
 	state.tips += tip;
 	best.outcome = 'served';
 	best.plate = plate;
-	state.events.push({ type: 'served', order: best, coins, tip, combo: state.combo, vip: best.vip, station });
+	state.events.push({ type: 'served', order: best, coins, tip, combo: state.combo, vip: best.vip, critic: best.critic && share > 0.5, table: tableBonus, station });
 	return { ok: true, coins };
 }
-
 export function starsFor(state) {
 	return state.night.stars.filter((need) => state.coins >= need).length;
 }

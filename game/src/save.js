@@ -1,5 +1,4 @@
-// Progress kept between visits: the best stars earned on each night. Storage may be off (private
-// windows), in which case progress lasts this visit only.
+// Progress kept between visits.
 import { NIGHTS } from './recipes.js';
 import { SAVE_KEY } from './config.js';
 
@@ -7,9 +6,9 @@ export function loadProgress() {
 	try {
 		const data = JSON.parse(window.localStorage.getItem(SAVE_KEY) ?? '{}');
 		const stars = Array.isArray(data.stars) ? data.stars.map((n) => Math.max(0, Math.min(3, n | 0))) : [];
-		return { stars };
+		return { stars, bank: Math.max(0, data.bank | 0), perks: Array.isArray(data.perks) ? data.perks.filter((p) => typeof p === 'string') : [] };
 	} catch {
-		return { stars: [] };
+		return { stars: [], bank: 0, perks: [] };
 	}
 }
 

@@ -1,11 +1,12 @@
-// The screens around a shift: the title with the five nights to pick from, the pause screen that
-// doubles as the recipe book, and the end-of-night results with stars and the dishes served.
+// Title, recipe book (pause) and results with the stall upgrades.
 import { FONT, TITLE_FONT, VIEW_H, VIEW_W } from './config.js';
 import { INGREDIENTS, TOOL_VERBS, routeTo } from './ingredients.js';
 import { NIGHTS, RECIPES } from './recipes.js';
 import { drawDish, drawIngredient } from './food-art.js';
-import { drawCoin, drawStar, drawToolIcon } from './hud.js';
-import { circle, oval, radial, rrect, text } from './paint.js';
+import { drawCoin, drawStar } from './hud.js';
+import { drawToolIcon } from './tool-icons.js';
+import { UPGRADES, upgradeState } from './upgrades.js';
+import { circle, oval, path, radial, rrect, text } from './paint.js';
 
 function veil(ctx, alpha) {
 	ctx.fillStyle = `rgba(14,8,22,${alpha})`;
@@ -27,10 +28,7 @@ function lantern(ctx, x, y, r, t, phase = 0) {
 	ctx.rotate(sway);
 	ctx.strokeStyle = '#1a0e08';
 	ctx.lineWidth = 2;
-	ctx.beginPath();
-	ctx.moveTo(0, -r * 2);
-	ctx.lineTo(0, -r);
-	ctx.stroke();
+	path(ctx, [0, -r * 2, 0, -r], false);
 	const glow = radial(ctx, 0, 0, 2, 0, 0, r * 2.6, ['rgba(255,170,80,0.5)', 'rgba(255,170,80,0)']);
 	circle(ctx, 0, 0, r * 2.6, glow);
 	const body = radial(ctx, -r * 0.3, -r * 0.3, 2, 0, 0, r, ['#ffb07a', '#e0402c', '#8a1a14']);
@@ -39,10 +37,7 @@ function lantern(ctx, x, y, r, t, phase = 0) {
 	ctx.fillRect(-r * 0.4, -r * 0.95, r * 0.8, r * 0.2);
 	ctx.fillRect(-r * 0.4, r * 0.75, r * 0.8, r * 0.2);
 	ctx.strokeStyle = '#e8b85a';
-	ctx.beginPath();
-	ctx.moveTo(0, r * 0.95);
-	ctx.lineTo(0, r * 1.5);
-	ctx.stroke();
+	path(ctx, [0, r * 0.95, 0, r * 1.5], false);
 	ctx.restore();
 }
 
@@ -56,7 +51,7 @@ export function titleCardRects() {
 export function drawTitle(ctx, ui, t) {
 	veil(ctx, 0.62);
 	for (let i = 0; i < 9; i += 1) lantern(ctx, 70 + i * 142, 60 + (i % 2) * 22, 20, t, i);
-	text(ctx, 'Kite Street Night Market', VIEW_W / 2 + 4, 176, `bold 76px ${TITLE_FONT}`, 'rgba(0,0,0,0.5)', 'center', 'middle');
+	text(ctx, 'Kite Street Night Market', VIEW_W / 2 + 4, 176, `bold 76px ${TITLE_FONT}`, 'rgba(0,0,0,0.5)');
 	const g = ctx.createLinearGradient(0, 140, 0, 210);
 	g.addColorStop(0, '#fff2c0');
 	g.addColorStop(1, '#ffb347');
@@ -183,7 +178,7 @@ export function drawRecipeCard(ctx, id, x, y, w, h, t) {
 
 export function drawPause(ctx, state, t) {
 	veil(ctx, 0.72);
-	text(ctx, 'Paused · Recipe Book', VIEW_W / 2, 70, `bold 46px ${TITLE_FONT}`, '#ffe9b0', 'center', 'middle');
+	text(ctx, 'Paused · Recipe Book', VIEW_W / 2, 70, `bold 46px ${TITLE_FONT}`, '#ffe9b0');
 	ctx.fillStyle = '#ffcf8a';
 	ctx.font = `16px ${FONT}`;
 	ctx.fillText('Each part shows its route: the raw ingredient, the tools in order, and how it goes on the plate.', VIEW_W / 2, 112);
@@ -203,9 +198,36 @@ export function drawPause(ctx, state, t) {
 	ctx.fillText('P / Esc / click to keep cooking · Q to leave the night', VIEW_W / 2, VIEW_H - 22);
 }
 
+export function upgradeRects() {
+	return UPGRADES.map((u, i) => ({ x: VIEW_W / 2 - 340 + i * 172, y: 494, w: 164, h: 112 }));
+}
+
+function drawUpgrades(ctx, ui, t) {
+	const progress = { bank: ui.bank ?? 0, perks: ui.perks ?? [] };
+	text(ctx, 'STALL UPGRADES', VIEW_W / 2 - 336, 476, `bold 15px ${FONT}`, '#ffcf8a', 'left');
+	text(ctx, `Savings ${progress.bank}`, VIEW_W / 2 + 310, 476, `bold 17px ${FONT}`, '#ffe08a', 'right');
+	drawCoin(ctx, VIEW_W / 2 + 326, 476, 9);
+	upgradeRects().forEach((r, i) => {
+		const u = UPGRADES[i];
+		const st = upgradeState(progress, i);
+		rrect(ctx, r.x, r.y, r.w, r.h, 12, st === 'owned' ? '#1f4a2a' : st === 'buy' ? '#5a3020' : '#33221c');
+		ctx.strokeStyle = st === 'owned' ? '#7ee06a' : st === 'buy' ? '#ffd34e' : '#6a4a3a';
+		ctx.lineWidth = 2;
+		ctx.stroke();
+		circle(ctx, r.x + 30, r.y + 34, 22, '#fff4dc');
+		if (u.icon === 'coin') drawCoin(ctx, r.x + 30, r.y + 34, 13);
+		else drawToolIcon(ctx, u.icon, r.x + 30, r.y + 34, 30);
+		text(ctx, `${i + 1}`, r.x + r.w - 14, r.y + 15, `bold 13px ${FONT}`, 'rgba(255,220,170,0.6)');
+		text(ctx, u.name, r.x + 60, r.y + 26, `bold 14px ${FONT}`, '#fff2d8', 'left');
+		text(ctx, u.what, r.x + r.w / 2, r.y + 68, `12px ${FONT}`, '#ffd9a8');
+		const label = st === 'owned' ? 'OWNED ✓' : `${u.cost} coins`;
+		text(ctx, label, r.x + r.w / 2, r.y + 94, `bold 15px ${FONT}`, st === 'owned' ? '#9fffb0' : st === 'buy' ? '#ffe066' : '#a08070');
+	});
+}
+
 export function resultButtonRects(canAdvance) {
 	const buttons = [];
-	const y = 640;
+	const y = 648;
 	if (canAdvance) buttons.push({ id: 'next', label: 'Next night  ⏎', x: VIEW_W / 2 - 290, y, w: 180, h: 50 });
 	buttons.push({ id: 'retry', label: 'Cook again  R', x: VIEW_W / 2 - 90, y, w: 180, h: 50 });
 	buttons.push({ id: 'menu', label: 'Night select  Esc', x: VIEW_W / 2 + 110, y, w: 180, h: 50 });
@@ -217,7 +239,7 @@ export function drawResults(ctx, state, ui, t) {
 	const x = VIEW_W / 2 - 360;
 	const y = 70;
 	panel(ctx, x, y, 720, 650);
-	text(ctx, `NIGHT ${state.nightIndex + 1} · ${state.night.title.toUpperCase()}`, VIEW_W / 2, y + 36, `bold 16px ${FONT}`, '#ffcf8a', 'center', 'middle');
+	text(ctx, `NIGHT ${state.nightIndex + 1} · ${state.night.title.toUpperCase()}`, VIEW_W / 2, y + 36, `bold 16px ${FONT}`, '#ffcf8a');
 	ctx.fillStyle = '#ffe9b0';
 	ctx.font = `bold 48px ${TITLE_FONT}`;
 	ctx.fillText(ui.stars >= 3 ? 'A legendary night!' : ui.stars >= 2 ? 'The street is talking!' : ui.stars >= 1 ? 'Stall closed. Well done!' : 'A rough night…', VIEW_W / 2, y + 84);
@@ -250,23 +272,11 @@ export function drawResults(ctx, state, ui, t) {
 		ctx.font = `bold 28px ${FONT}`;
 		ctx.fillText(String(value), sx, y + 366);
 	});
-	const log = state.servedLog ?? [];
-	ctx.fillStyle = 'rgba(255,220,170,0.75)';
-	ctx.font = `14px ${FONT}`;
-	ctx.fillText(log.length ? 'Tonight\'s dishes' : 'No dishes served tonight', VIEW_W / 2, y + 412);
-	const n = Math.min(log.length, 12);
-	for (let i = 0; i < n; i += 1) {
-		const dx = VIEW_W / 2 + (i - (n - 1) / 2) * 56;
-		drawDish(ctx, log[i], dx, y + 466, 26, t, false);
-	}
-	if (log.length > 12) {
-		ctx.fillStyle = '#ffcf8a';
-		ctx.fillText(`+${log.length - 12} more`, VIEW_W / 2, y + 510);
-	}
+	drawUpgrades(ctx, ui, t);
 	if (ui.newUnlock) {
 		ctx.fillStyle = '#9fffb0';
 		ctx.font = `bold 17px ${FONT}`;
-		ctx.fillText(`Night ${state.nightIndex + 2} unlocked: ${NIGHTS[state.nightIndex + 1].title}`, VIEW_W / 2, y + 538);
+		ctx.fillText(`Night ${state.nightIndex + 2} unlocked: ${NIGHTS[state.nightIndex + 1].title}`, VIEW_W / 2, y + 558);
 	}
 	for (const b of resultButtonRects(ui.canAdvance)) {
 		rrect(ctx, b.x, b.y, b.w, b.h, 12, b.id === (ui.canAdvance ? 'next' : 'retry') ? '#d8392a' : '#5a3020');

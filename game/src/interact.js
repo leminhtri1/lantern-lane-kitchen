@@ -1,13 +1,11 @@
-// The one verb the cook has: use the station in front of you. Crates hand out ingredients, the
-// plate stacks hand out plates, counters and boards hold one thing, cooking stations take what
-// they can cook and give back what is done, the bin empties hands or plates, and the hatch serves.
-// Holding Space at a board with something uncut on it chops instead.
+// The one verb the cook has: use the station in front (crate, board, heat, plates, bin, hatch).
 import { CHOP_SECONDS, CHOP_STROKE } from './config.js';
 import { INGREDIENTS, canChop, newItem } from './ingredients.js';
 import { isCookStation } from './kitchen-layout.js';
-import { matchRecipe, plateAccepts } from './recipes.js';
+import { dishSpecs, matchRecipe, plateAccepts } from './recipes.js';
 import { addToCook, cookAccepts, stationHasRoom } from './stations.js';
 import { serveDish } from './orders.js';
+import { perk } from './upgrades.js';
 
 function refuse(state, station, text) {
 	state.events.push({ type: 'refuse', station, text });
@@ -25,10 +23,11 @@ function placed(state, station, what) {
 }
 
 function itemOntoPlate(state, plate, item) {
-	if (!plateAccepts(plate, item, state.menu)) return false;
+	const specs = dishSpecs(state);
+	if (!plateAccepts(plate, item, specs)) return false;
 	item.progress = 0;
 	plate.items.push(item);
-	if (matchRecipe(plate, state.menu)) state.events.push({ type: 'complete', plate });
+	if (matchRecipe(plate, specs)) state.events.push({ type: 'complete', plate });
 	return true;
 }
 
@@ -182,7 +181,7 @@ function chopStroke(state, station) {
 export function chopTick(state, station, dt) {
 	const item = station.held;
 	if (!canChop(item)) return false;
-	item.progress += dt / CHOP_SECONDS;
+	item.progress += (dt * perk(state, 'knife', 1.4)) / CHOP_SECONDS;
 	state.player.chopStroke += dt;
 	if (state.player.chopStroke >= CHOP_STROKE) {
 		state.player.chopStroke -= CHOP_STROKE;

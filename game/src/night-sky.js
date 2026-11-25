@@ -1,6 +1,4 @@
-// Each night has its own weather over the street: a clear opening night, sky lanterns drifting up
-// at the fair, rain on the awnings, fireworks over the harbour, and a full moon over the market.
-// Drawn from the shift clock alone, so screenshot scenes stay repeatable.
+// Each night has its own weather over the street.
 import { GRID_Y, STREET_X, VIEW_H, VIEW_W } from './config.js';
 import { TAU, circle, radial } from './paint.js';
 

@@ -1,7 +1,4 @@
-// The eleven ingredients and what each tool turns them into. An item is { kind: 'item', ing,
-// state, progress }: `state` starts 'raw' and changes when a tool finishes with it ('chopped' on a
-// board, 'boiled' in the pot, 'fried' in the wok, 'steamed' in the steamer, 'grilled' on the
-// grill), or turns 'burnt' when left cooking too long.
+// The eleven ingredients and what each tool turns them into.
 
 export const INGREDIENTS = {
 	noodles: { name: 'Noodles', color: '#f2cf6b', steps: { raw: { pot: 'boiled' } } },

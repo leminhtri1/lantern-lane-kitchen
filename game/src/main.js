@@ -1,9 +1,4 @@
-// Boot and the one loop. Input is read every frame, the shift advances in fixed 1/60 s steps, its
-// events become sounds, and the renderer paints. The game moves between four screens: title
-// (pick a night), play, paused (the recipe book) and results.
-//
-// ?seed=N fixes the order sequence. ?shot=<name>&seed=N stages a screenshot scene instead of
-// running the loop (see shots.js), paints it twice and sets window.__shotReady.
+// Boot and the one loop: input, fixed-step shift, sounds and the four screens.
 import { STEP } from './config.js';
 import { createRandom } from './random.js';
 import { NIGHTS } from './recipes.js';
@@ -13,8 +8,11 @@ import { createInput } from './input.js';
 import { createRenderer } from './render.js';
 import { createAudio } from './audio.js';
 import { loadProgress, saveProgress, unlockedNight } from './save.js';
-import { resultButtonRects, titleCardRects } from './screens.js';
+import { resultButtonRects, titleCardRects, upgradeRects } from './screens.js';
+import { UPGRADES, buyUpgrade } from './upgrades.js';
 import { dressKitchen, stageShot } from './shots.js';
+import { cycleFocus } from './route-guide.js';
+import { TICKET_W } from './hud.js';
 
 const MAX_FRAME = 0.25;
 const RESULTS_DELAY = 1.6;
@@ -65,7 +63,7 @@ function runGame() {
 	let pendingClicks = [];
 
 	function startNight(index) {
-		state = createShift(index, createRandom(fixedSeed ?? Math.floor(Math.random() * 2 ** 31)));
+		state = createShift(index, createRandom(fixedSeed ?? Math.floor(Math.random() * 2 ** 31)), progress.perks);
 		screen = 'play';
 		accumulator = 0;
 		overFor = 0;
@@ -87,6 +85,7 @@ function runGame() {
 		const n = state.nightIndex;
 		const before = progress.stars[n] ?? 0;
 		progress.stars[n] = Math.max(before, stars);
+		progress.bank += state.coins;
 		saveProgress(progress);
 		ui.stars = progress.stars;
 		ui.age = 0;
@@ -115,6 +114,14 @@ function runGame() {
 		}
 	}
 
+	function buy(i) {
+		if (buyUpgrade(progress, i)) {
+			saveProgress(progress);
+			audio.play('served');
+			announce(`Bought ${UPGRADES[i].name}.`);
+		} else audio.play('refuse');
+	}
+
 	function handleResults(pressed, clicks) {
 		let choice = null;
 		if (pressed.has('confirm') || pressed.has('use')) choice = ui.canAdvance ? 'next' : 'retry';
@@ -123,7 +130,10 @@ function runGame() {
 		for (const click of clicks) {
 			const b = resultButtonRects(ui.canAdvance).find((r) => inside(click, r));
 			if (b) choice = b.id;
+			const u = upgradeRects().findIndex((r) => inside(click, r));
+			if (u >= 0) buy(u);
 		}
+		for (let i = 0; i < 4; i += 1) if (pressed.has(`buy${i + 1}`)) buy(i);
 		if (choice === 'next') startNight(state.nightIndex + 1);
 		else if (choice === 'retry') startNight(state.nightIndex);
 		else if (choice === 'menu') toTitle();
@@ -156,7 +166,14 @@ function runGame() {
 			} else {
 				accumulator += dt;
 				pendingUse = pendingUse || pressed.has('use');
-				pendingClicks.push(...clicks);
+				if (pressed.has('focus')) cycleFocus(state);
+				for (const click of clicks) {
+					// A click on the ticket rail picks the ticket the route guide follows.
+					if (click.y < 146) {
+						const order = state.orders[Math.floor((click.x - 18) / (TICKET_W + 8))];
+						if (order && !order.outcome && click.x < 900) state.focusId = order.id;
+					} else pendingClicks.push(click);
+				}
 				while (accumulator >= STEP) {
 					const controls = { dir: input.direction(), usePressed: pendingUse, useHeld: input.isDown('use'), clicks: pendingClicks };
 					stepShift(state, STEP, state.over ? NO_CONTROLS : controls);
@@ -175,6 +192,8 @@ function runGame() {
 				}
 			}
 		}
+		ui.bank = progress.bank;
+		ui.perks = progress.perks;
 		renderer.draw({ state, screen, ui });
 	}
 

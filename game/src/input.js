@@ -1,5 +1,4 @@
-// Keyboard and mouse, read once a frame: a movement direction, "use" pressed this frame or held,
-// menu keys, and clicks already turned into logical canvas coordinates.
+// Keyboard and mouse, read once a frame.
 
 const KEYS = {
 	ArrowUp: 'up',
@@ -20,6 +19,11 @@ const KEYS = {
 	KeyM: 'music',
 	KeyR: 'retry',
 	KeyQ: 'quit',
+	Tab: 'focus',
+	Digit1: 'buy1',
+	Digit2: 'buy2',
+	Digit3: 'buy3',
+	Digit4: 'buy4',
 };
 
 export function createInput(canvas, toLogical) {

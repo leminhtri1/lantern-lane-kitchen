@@ -1,5 +1,4 @@
-// The cook: walks the floor with keys or by following a clicked path, slides along counters, faces
-// the way they last moved and works the station in front of them.
+// The cook's movement, collisions and the station they face.
 import { PLAYER_RADIUS, PLAYER_SPEED, TILE } from './config.js';
 import { isFloor, stationAt, tileAt, tileCenter } from './kitchen-layout.js';
 import { pathToStation, findPath } from './pathfind.js';

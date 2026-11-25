@@ -1,9 +1,8 @@
-// What the cooking stations do on their own every step: each item in a pot, wok, steamer or grill
-// cooks at its own pace, turns into its cooked state at 100%, starts to smoke a little later and
-// burns if nobody takes it out. The shift hears about each change through its event list.
+// What the cooking stations do on their own every step.
 import { COOK, STATION_CAPACITY } from './config.js';
 import { isCookStation } from './kitchen-layout.js';
 import { resultOf } from './ingredients.js';
+import { perk } from './upgrades.js';
 
 export function burnPoint(type) {
 	return 1 + COOK[type].burn / COOK[type].time;
@@ -54,7 +53,7 @@ export function updateStations(state, dt) {
 		for (const item of station.items) {
 			if (item.state === 'burnt') continue;
 			const before = item.progress;
-			item.progress += dt / time;
+			item.progress += (dt * (station.type === 'wok' || station.type === 'grill' ? perk(state, 'burner', 1.3) : 1)) / time;
 			if (before < 1 && item.progress >= 1) {
 				item.state = item.cookTo;
 				state.events.push({ type: 'cooked', station });

@@ -1,14 +1,16 @@
-// Paints one frame: fits the 1280 x 800 stall into the window (letterboxed, sharp on high-DPI
-// screens), lays the cached static kitchen down, then customers, station tops and the cook in
-// depth order, status rings, effects, the HUD and whichever screen is up.
+// Paints one frame: kitchen, route guide, cook, effects, HUD and screens.
 import { FONT, GRID_Y, ROWS, TILE, VIEW_H, VIEW_W } from './config.js';
 import { drawStaticKitchen, drawStationStatus, drawStationTop, drawTargetHighlight } from './kitchen-art.js';
 import { drawCook, drawCustomers } from './people-art.js';
 import { drawParticles, drawTexts } from './effects.js';
-import { drawBanner, drawHint, drawHud } from './hud.js';
-import { hintFor } from './hints.js';
+import { drawBanner, drawHud } from './hud.js';
 import { drawPause, drawResults, drawTitle } from './screens.js';
 import { drawNightSky } from './night-sky.js';
+import { drawGhostSlots, drawRouteCard, drawRoutePath, drawRouteStops, focusOrder, planRoute } from './route-guide.js';
+import { dishSpecs, matchRecipe } from './recipes.js';
+import { tileCenter } from './kitchen-layout.js';
+import { drawAwning, drawRushGlow, drawStallSign } from './stall-dressing.js';
+import { isRushHour, rushLevel } from './orders.js';
 
 export function createRenderer(canvas) {
 	const ctx = canvas.getContext('2d');
@@ -38,10 +40,17 @@ export function createRenderer(canvas) {
 		return cache;
 	}
 
-	function drawKitchen(state) {
+	function drawKitchen(state, screen) {
 		const t = state.clock;
 		const { kitchen, player } = state;
+		const specs = dishSpecs(state);
+		const focus = screen === 'play' && !state.over ? focusOrder(state) : null;
+		const plan = focus ? planRoute(state, focus) : null;
 		ctx.drawImage(staticLayer(kitchen), 0, 0);
+		if (plan) {
+			drawRoutePath(ctx, state, plan, t);
+			drawRouteCard(ctx, state, plan, 220, 532, 604, 154, t);
+		}
 		drawNightSky(ctx, state.nightIndex, t);
 		drawCustomers(ctx, state.orders, t);
 		const playerRow = Math.floor((player.y - GRID_Y) / TILE);
@@ -49,12 +58,23 @@ export function createRenderer(canvas) {
 			for (const station of kitchen.stations) {
 				if (station.r !== r) continue;
 				const swing = player.chopping === station ? Math.sin(t * 38) * 0.7 : 0;
-				drawStationTop(ctx, station, t, state.menu, swing);
+				drawStationTop(ctx, station, t, specs, swing);
 				if (player.target === station && !state.over) drawTargetHighlight(ctx, station, t);
 			}
 			if (r === playerRow) drawCook(ctx, player, t);
 		}
-		for (const station of kitchen.stations) drawStationStatus(ctx, station, t);
+		for (const station of kitchen.stations) {
+			drawStationStatus(ctx, station, t);
+			const p = station.held;
+			if (p?.kind === 'plate' && p.items.length && !matchRecipe(p, specs)) {
+				const c = tileCenter(station.c, station.r);
+				drawGhostSlots(ctx, state, p, c.x, c.y - 4, t);
+			}
+		}
+		drawRouteStops(ctx, plan);
+		drawAwning(ctx, t);
+		drawStallSign(ctx, t);
+		if (screen === 'play' && !state.over && isRushHour(state)) drawRushGlow(ctx, Math.min(1, (rushLevel(state) - 0.7) * 4), t);
 		drawParticles(ctx, state.fx);
 		drawTexts(ctx, state.fx, FONT);
 	}
@@ -75,7 +95,7 @@ export function createRenderer(canvas) {
 			const s = shake * 6;
 			ctx.translate(Math.sin(state.clock * 91) * s, Math.cos(state.clock * 77) * s);
 		}
-		drawKitchen(state);
+		drawKitchen(state, screen);
 		if (screen !== 'title') drawHud(ctx, state, state.clock);
 		if (state.fx.flash > 0) {
 			ctx.globalAlpha = state.fx.flash * 0.35;
@@ -84,7 +104,6 @@ export function createRenderer(canvas) {
 			ctx.globalAlpha = 1;
 		}
 		if (screen === 'play') {
-			drawHint(ctx, hintFor(state));
 			drawBanner(ctx, state.banner);
 		}
 		if (screen === 'title') drawTitle(ctx, ui, ui.time);

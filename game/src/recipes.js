@@ -1,7 +1,4 @@
-// The menu: eight dishes built from shared parts (steamed pork goes in dumplings and bao, chopped
-// scallion tops four dishes, rice is steamed for one and fried for another), and the five nights
-// that unlock them. A plate accepts an item only while its parts still fit some dish on tonight's
-// menu, so a plate always grows toward something a customer can order.
+// The menu: eight dishes built from shared parts, the five nights, and plate matching.
 import { partKey } from './ingredients.js';
 
 export const RECIPES = {
@@ -37,22 +34,37 @@ export function plateKeys(plate) {
 	return plate.items.map(partKey);
 }
 
-export function plateAccepts(plate, item, menu) {
+/** What a plate may become tonight: every dish on the menu, plus each live ticket's own version. */
+export function dishSpecs(state) {
+	const specs = state.menu.map((id) => ({ id, parts: RECIPES[id].parts }));
+	for (const o of state.orders) if (!o.outcome && o.extra) specs.push({ id: o.recipe, parts: o.parts, order: o });
+	return specs;
+}
+
+export function missingParts(keys, parts) {
+	const left = [...parts];
+	for (const key of keys) {
+		const at = left.indexOf(key);
+		if (at !== -1) left.splice(at, 1);
+	}
+	return left;
+}
+
+export const sameParts = (a, b) => a.length === b.length && isSubset(a, b);
+
+export function plateAccepts(plate, item, specs) {
 	if (item.kind !== 'item' || item.state === 'burnt') return false;
 	const keys = [...plateKeys(plate), partKey(item)];
-	return menu.some((id) => isSubset(keys, RECIPES[id].parts));
+	return specs.some((s) => isSubset(keys, s.parts));
 }
 
-export function matchRecipe(plate, menu) {
+export function matchRecipe(plate, specs) {
 	const keys = plateKeys(plate);
-	for (const id of menu) {
-		const parts = RECIPES[id].parts;
-		if (parts.length === keys.length && isSubset(keys, parts)) return id;
-	}
-	return null;
+	return specs.find((s) => sameParts(keys, s.parts))?.id ?? null;
 }
 
-export function candidateRecipes(plate, menu) {
+/** Live tickets the plate is on its way to, the closest to done first. */
+export function ordersFitting(plate, orders) {
 	const keys = plateKeys(plate);
-	return menu.filter((id) => isSubset(keys, RECIPES[id].parts)).sort((a, b) => RECIPES[a].parts.length - RECIPES[b].parts.length);
+	return orders.filter((o) => !o.outcome && isSubset(keys, o.parts)).sort((a, b) => a.parts.length - b.parts.length);
 }

@@ -1,9 +1,8 @@
-// The cook (teal jacket, red headband, cleaver in hand when chopping) and the customers queuing on
-// the street outside the hatch, each waiting under a little speech bubble with their dish.
+// The cook and the customers queuing on the street.
 import { FONT, GRID_Y, STREET_X } from './config.js';
 import { drawIngredient, drawPlated, drawDish } from './food-art.js';
 import { plateKeys } from './recipes.js';
-import { TAU, circle, oval, rrect } from './paint.js';
+import { TAU, circle, oval, path, rrect } from './paint.js';
 
 function drawHeld(ctx, held, x, y, t) {
 	if (!held) return;
@@ -75,11 +74,7 @@ function drawCookBody(ctx, player, t) {
 	ctx.fillStyle = '#d8342a';
 	ctx.fillRect(x - 17, hy0 - 9, 34, 6);
 	const flap = Math.sin(t * 9 + player.walk) * 4;
-	ctx.beginPath();
-	ctx.moveTo(x - fx * 16, hy0 - 6);
-	ctx.lineTo(x - fx * 30 - 4, hy0 - 2 + flap);
-	ctx.lineTo(x - fx * 28 + 2, hy0 + 4 + flap);
-	ctx.fill();
+	path(ctx, [x - fx * 16, hy0 - 6, x - fx * 30 - 4, hy0 - 2 + flap, x - fx * 28 + 2, hy0 + 4 + flap], true);
 	if (!behind) {
 		ctx.fillStyle = '#2b1a12';
 		ctx.beginPath();
@@ -124,15 +119,7 @@ function drawCustomer(ctx, order, x, y, t) {
 	ctx.arc(cx, y - 20, 15.5, Math.PI, TAU);
 	ctx.fill();
 	if (order.vip) {
-		ctx.beginPath();
-		ctx.moveTo(cx - 12, y - 30);
-		ctx.lineTo(cx - 8, y - 44);
-		ctx.lineTo(cx - 2, y - 34);
-		ctx.lineTo(cx + 4, y - 46);
-		ctx.lineTo(cx + 8, y - 34);
-		ctx.lineTo(cx + 13, y - 42);
-		ctx.lineTo(cx + 12, y - 30);
-		ctx.fill();
+		path(ctx, [cx - 12, y - 30, cx - 8, y - 44, cx - 2, y - 34, cx + 4, y - 46, cx + 8, y - 34, cx + 13, y - 42, cx + 12, y - 30], true);
 	}
 	ctx.fillStyle = '#2b1a12';
 	ctx.beginPath();

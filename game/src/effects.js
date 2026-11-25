@@ -1,5 +1,4 @@
-// Short-lived feedback: chop bits, steam, smoke, sparkles, coin pop-ups, refusals, screen flash and
-// shake. Effects draw from the shift's seeded random so a screenshot scene stays repeatable.
+// Particles (chop bits, sparks, steam, smoke, flames) and floating text.
 
 export function createEffects() {
 	return { particles: [], texts: [], flash: 0, flashColor: '#fff3c4', shake: 0, coinPop: 0 };

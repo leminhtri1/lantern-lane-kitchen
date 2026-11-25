@@ -1,8 +1,6 @@
-// Every ingredient and dish drawn with canvas paths: glossy gradients, char marks, steam and
-// garnish, so the food reads at a glance and looks worth serving. Sizes are in logical pixels;
-// `s` is the size of one ingredient, and plates are drawn around their contents.
+// Every ingredient and dish drawn with canvas paths.
 import { RECIPES } from './recipes.js';
-import { TAU, circle, linear, oval, radial, rrect } from './paint.js';
+import { TAU, circle, linear, oval, path, radial, rrect } from './paint.js';
 
 function glossy(ctx, x, y, rx, ry, light, base, dark, rot = 0) {
 	const g = radial(ctx, x - rx * 0.35, y - ry * 0.45, Math.max(1, Math.min(rx, ry) * 0.1), x, y, Math.max(rx, ry) * 1.1, [light, base, dark]);
@@ -80,15 +78,9 @@ function scallion(ctx, x, y, s) {
 		const oy = (i - 1) * s * 0.1;
 		ctx.strokeStyle = '#f4f7e6';
 		ctx.lineWidth = s * 0.1;
-		ctx.beginPath();
-		ctx.moveTo(x - s * 0.4, y + oy + s * 0.05);
-		ctx.lineTo(x - s * 0.1, y + oy);
-		ctx.stroke();
+		path(ctx, [x - s * 0.4, y + oy + s * 0.05, x - s * 0.1, y + oy], false);
 		ctx.strokeStyle = i === 1 ? '#3f9e36' : '#5cc24a';
-		ctx.beginPath();
-		ctx.moveTo(x - s * 0.1, y + oy);
-		ctx.lineTo(x + s * 0.42, y + oy - s * 0.08 + i * s * 0.03);
-		ctx.stroke();
+		path(ctx, [x - s * 0.1, y + oy, x + s * 0.42, y + oy - s * 0.08 + i * s * 0.03], false);
 	}
 }
 
@@ -166,10 +158,7 @@ function skewer(ctx, x, y, s, kind, angle = -0.35) {
 	ctx.strokeStyle = '#d8b07a';
 	ctx.lineWidth = s * 0.05;
 	ctx.lineCap = 'round';
-	ctx.beginPath();
-	ctx.moveTo(-s * 0.55, 0);
-	ctx.lineTo(s * 0.55, 0);
-	ctx.stroke();
+	path(ctx, [-s * 0.55, 0, s * 0.55, 0], false);
 	for (let i = 0; i < 3; i += 1) {
 		const px = -s * 0.28 + i * s * 0.25;
 		if (kind === 'chicken') {
@@ -244,18 +233,11 @@ function shrimp(ctx, x, y, s, cooked, flip = 1) {
 		else glossy(ctx, px, py, size, size * 0.9, '#e6eef2', '#9fb3be', '#5d7480');
 	}
 	ctx.fillStyle = cooked ? '#ff6a3a' : '#7f97a3';
-	ctx.beginPath();
-	ctx.moveTo(s * 0.12, -s * 0.12);
-	ctx.lineTo(s * 0.32, -s * 0.22);
-	ctx.lineTo(s * 0.28, -s * 0.05);
-	ctx.fill();
+	path(ctx, [s * 0.12, -s * 0.12, s * 0.32, -s * 0.22, s * 0.28, -s * 0.05], true);
 	if (cooked) {
 		ctx.strokeStyle = 'rgba(80,25,5,0.55)';
 		ctx.lineWidth = s * 0.025;
-		ctx.beginPath();
-		ctx.moveTo(-s * 0.12, -s * 0.06);
-		ctx.lineTo(0, s * 0.08);
-		ctx.stroke();
+		path(ctx, [-s * 0.12, -s * 0.06, 0, s * 0.08], false);
 	}
 	ctx.restore();
 }

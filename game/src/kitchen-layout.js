@@ -1,6 +1,4 @@
-// The stall's floor plan as a grid of characters, and the station objects built from it. Crates
-// line the left wall and the front counter, the cooking line runs along the back, the plating
-// island splits the floor so every order is a route, and the serving hatch opens onto the street.
+// The stall's floor plan as a grid of characters, and the station objects built from it.
 import { COLS, GRID_X, GRID_Y, ROWS, TILE } from './config.js';
 
 const MAP = [
