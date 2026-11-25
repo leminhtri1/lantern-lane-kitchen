@@ -174,6 +174,8 @@ function startChop(state, station) {
   state.player.chopping = station;
   state.player.chopStroke = 0;
   chopStroke(state, station);
+  // Each fresh press bites deeper, so tapping chops as well as holding does.
+  if (station.held.progress > 0) station.held.progress = Math.min(0.95, station.held.progress + 0.12);
   return true;
 }
 

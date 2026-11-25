@@ -16,11 +16,11 @@ export const RECIPES = {
 };
 
 export const NIGHTS = [
-  { title: 'Opening Night', menu: ['soup', 'skewers', 'dumplings'], stars: [90, 180, 270], spawn: [19, 10] },
-  { title: 'Paper Lantern Fair', menu: ['soup', 'skewers', 'dumplings', 'friedrice'], stars: [110, 210, 310], spawn: [18, 9.5] },
-  { title: 'Rain on the Awnings', menu: ['soup', 'skewers', 'dumplings', 'friedrice', 'bao', 'mango'], stars: [130, 240, 350], spawn: [17, 9] },
-  { title: 'Harbour Fireworks', menu: ['soup', 'dumplings', 'friedrice', 'bao', 'mango', 'shrimpsoup', 'skewers'], stars: [150, 270, 390], spawn: [16, 8.5] },
-  { title: 'Moonlight Market', menu: ['soup', 'skewers', 'dumplings', 'friedrice', 'bao', 'mango', 'shrimpsoup', 'stirfry'], stars: [170, 300, 430], spawn: [15, 8] },
+  { title: 'Opening Night', menu: ['soup', 'skewers', 'dumplings'], stars: [100, 210, 320], spawn: [19, 10] },
+  { title: 'Paper Lantern Fair', menu: ['soup', 'skewers', 'dumplings', 'friedrice'], stars: [120, 240, 360], spawn: [18, 9.5] },
+  { title: 'Rain on the Awnings', menu: ['soup', 'skewers', 'dumplings', 'friedrice', 'bao', 'mango'], stars: [140, 270, 400], spawn: [17, 9] },
+  { title: 'Harbour Fireworks', menu: ['soup', 'dumplings', 'friedrice', 'bao', 'mango', 'shrimpsoup', 'skewers'], stars: [160, 300, 440], spawn: [16, 8.5] },
+  { title: 'Moonlight Market', menu: ['soup', 'skewers', 'dumplings', 'friedrice', 'bao', 'mango', 'shrimpsoup', 'stirfry'], stars: [180, 330, 480], spawn: [15, 8] },
 ];
 
 /** True when every key in `keys` can be taken (once each) from `parts`. */

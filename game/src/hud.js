@@ -290,9 +290,10 @@ function drawPurse(ctx, state, t) {
   ctx.fillStyle = 'rgba(255,230,190,0.7)';
   ctx.font = `12px ${FONT}`;
   ctx.fillText(state.night.title, x + 62, 20);
-  drawCoin(ctx, x + 14, 50, 14);
-  ctx.fillStyle = '#ffe08a';
-  ctx.font = `bold 30px ${FONT}`;
+  const pop = 1 + 0.35 * state.fx.coinPop;
+  drawCoin(ctx, x + 14, 50, 14 * pop);
+  ctx.fillStyle = state.fx.coinPop > 0.3 ? '#fff6c0' : '#ffe08a';
+  ctx.font = `bold ${Math.round(30 * pop)}px ${FONT}`;
   ctx.fillText(String(state.coins), x + 34, 52);
   const stars = starsFor(state);
   for (let i = 0; i < 3; i += 1) drawStar(ctx, x + 132 + i * 22, 50, 10, i < stars);
@@ -355,6 +356,35 @@ export function drawBanner(ctx, banner) {
   ctx.fillStyle = '#ffcf8a';
   ctx.fillText(banner.sub, VIEW_W / 2, y + 30);
   ctx.restore();
+}
+
+/** The first night's coaching line, in a pill over the rug. */
+export function drawHint(ctx, text) {
+  if (!text) return;
+  ctx.font = `bold 17px ${FONT}`;
+  const w = ctx.measureText(text).width + 56;
+  const x = 528 - w / 2;
+  const y = 588;
+  ctx.fillStyle = 'rgba(25,12,6,0.82)';
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, 40, 20);
+  ctx.fill();
+  ctx.strokeStyle = '#e8b85a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#ffd34e';
+  ctx.beginPath();
+  ctx.arc(x + 22, y + 20, 9, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = '#3a1a0a';
+  ctx.font = `bold 14px ${FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('?', x + 22, y + 21);
+  ctx.fillStyle = '#fff2d8';
+  ctx.font = `bold 17px ${FONT}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(text, x + 40, y + 21);
 }
 
 export function drawHud(ctx, state, t) {

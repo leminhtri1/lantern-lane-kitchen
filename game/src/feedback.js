@@ -56,6 +56,7 @@ export function applyFeedback(state) {
         if (e.vip) floatText(fx, p.x - 30, p.y + 24, 'VIP pays double!', '#ffe066', 20, 1.6);
         fx.flash = 0.35;
         fx.flashColor = '#fff3c4';
+        fx.coinPop = 1;
         break;
       }
       case 'missed':

@@ -1,7 +1,10 @@
 // Play the real game in headless Chrome: start night 1 from the title, cook and serve a Lantern
 // Noodle Soup with mouse clicks only, try the keyboard (walk, use, pause), run the clock out and
 // reach the results screen, failing on any page error. `node tools/playtest.mjs`.
+import { writeFileSync } from 'node:fs';
 import { launchChrome, serveGame, sleep, waitFor, watchErrors } from './cdp.mjs';
+
+const shotPath = process.argv.includes('--shot') ? process.argv[process.argv.indexOf('--shot') + 1] : null;
 
 const TILE = 92;
 const tile = (c, r) => ({ x: 16 + c * TILE + TILE / 2, y: 150 + r * TILE + TILE / 2 });
@@ -61,6 +64,10 @@ try {
   check((await value('window.__lantern.state.kitchen.grid[3][4].held.state')) === 'chopped', 'scallion chopped on the island board');
   await click(8, 3);
   check((await held())?.includes('plate'), 'took a plate');
+  if (shotPath) {
+    const { data } = await client.send('Page.captureScreenshot', { format: 'jpeg', quality: 80 });
+    writeFileSync(shotPath, Buffer.from(data, 'base64'));
+  }
   await click(4, 3);
   check((await value('window.__lantern.state.player.held.items.length')) === 1, 'scallion went onto the plate');
   await waitFor(client, 'window.__lantern.state.kitchen.grid[0][1].items.every((i) => i.progress >= 1)', 12000);

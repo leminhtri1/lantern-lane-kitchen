@@ -30,7 +30,8 @@ export function drawCook(ctx, player, t) {
   ctx.ellipse(x - 9, y + 19 + step * 0.4, 7, 5, 0, 0, TAU);
   ctx.ellipse(x + 9, y + 19 - step * 0.4, 7, 5, 0, 0, TAU);
   ctx.fill();
-  if (behind) drawHeld(ctx, player.held, hx, hy - 8, t);
+  // Facing away, the held food shows above the cook's head.
+  if (behind) drawHeld(ctx, player.held, x + fx * 20, y - 54, t);
   // Body: teal jacket with orange trim and a cream apron.
   const by = y - bob;
   const g = ctx.createLinearGradient(x - 22, by - 16, x + 22, by + 20);

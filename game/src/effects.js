@@ -2,7 +2,7 @@
 // shake. Effects draw from the shift's seeded random so a screenshot scene stays repeatable.
 
 export function createEffects() {
-  return { particles: [], texts: [], flash: 0, flashColor: '#fff3c4', shake: 0 };
+  return { particles: [], texts: [], flash: 0, flashColor: '#fff3c4', shake: 0, coinPop: 0 };
 }
 
 export function emit(fx, random, kind, x, y, count, opts = {}) {
@@ -53,6 +53,7 @@ export function updateEffects(fx, dt) {
   fx.texts = fx.texts.filter((t) => t.life > 0);
   fx.flash = Math.max(0, fx.flash - dt * 2.5);
   fx.shake = Math.max(0, fx.shake - dt * 3);
+  fx.coinPop = Math.max(0, fx.coinPop - dt * 2.5);
 }
 
 function star(ctx, x, y, r) {

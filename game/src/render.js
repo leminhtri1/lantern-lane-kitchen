@@ -5,7 +5,8 @@ import { FONT, GRID_Y, ROWS, TILE, VIEW_H, VIEW_W } from './config.js';
 import { drawStaticKitchen, drawStationStatus, drawStationTop, drawTargetHighlight } from './kitchen-art.js';
 import { drawCook, drawCustomers } from './people-art.js';
 import { drawParticles, drawTexts } from './effects.js';
-import { drawBanner, drawHud } from './hud.js';
+import { drawBanner, drawHint, drawHud } from './hud.js';
+import { hintFor } from './hints.js';
 import { drawPause, drawResults, drawTitle } from './screens.js';
 import { drawNightSky } from './night-sky.js';
 
@@ -83,7 +84,10 @@ export function createRenderer(canvas) {
       ctx.fillRect(0, 0, VIEW_W, VIEW_H);
       ctx.globalAlpha = 1;
     }
-    if (screen === 'play') drawBanner(ctx, state.banner);
+    if (screen === 'play') {
+      drawHint(ctx, hintFor(state));
+      drawBanner(ctx, state.banner);
+    }
     if (screen === 'title') drawTitle(ctx, ui, ui.time);
     else if (screen === 'paused') drawPause(ctx, state, ui.time);
     else if (screen === 'results') drawResults(ctx, state, ui, ui.time);
