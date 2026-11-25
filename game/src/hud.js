@@ -6,8 +6,8 @@ import { routeTo } from './ingredients.js';
 import { RECIPES } from './recipes.js';
 import { drawDish, drawIngredient } from './food-art.js';
 import { isRushHour, rushLevel, starsFor } from './orders.js';
+import { TAU, circle, linear, oval, radial, rrect, text } from './paint.js';
 
-const TAU = Math.PI * 2;
 export const TICKET_W = 170;
 export const TICKET_H = 114;
 const RAIL_X = 12;
@@ -20,41 +20,26 @@ export function ticketX(i) {
 export function drawToolIcon(ctx, tool, x, y, s) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = 'rgba(60,30,15,0.12)';
-  ctx.beginPath();
-  ctx.arc(0, 0, s * 0.62, 0, TAU);
-  ctx.fill();
+  circle(ctx, 0, 0, s * 0.62, 'rgba(60,30,15,0.12)');
   if (tool === 'board') {
     ctx.rotate(-0.6);
     ctx.fillStyle = '#6b3a1a';
     ctx.fillRect(-s * 0.08, s * 0.05, s * 0.16, s * 0.42);
-    ctx.fillStyle = '#9aa6b2';
-    ctx.beginPath();
-    ctx.roundRect(-s * 0.26, -s * 0.48, s * 0.46, s * 0.56, 2);
-    ctx.fill();
+    rrect(ctx, -s * 0.26, -s * 0.48, s * 0.46, s * 0.56, 2, '#9aa6b2');
   } else if (tool === 'pot') {
-    ctx.fillStyle = '#8b939e';
-    ctx.beginPath();
-    ctx.roundRect(-s * 0.42, -s * 0.22, s * 0.84, s * 0.56, 3);
-    ctx.fill();
+    rrect(ctx, -s * 0.42, -s * 0.22, s * 0.84, s * 0.56, 3, '#8b939e');
     ctx.fillRect(-s * 0.55, -s * 0.18, s * 1.1, s * 0.1);
     ctx.fillStyle = '#e8a33c';
     ctx.fillRect(-s * 0.36, -s * 0.18, s * 0.72, s * 0.12);
   } else if (tool === 'wok') {
-    ctx.fillStyle = '#ff9a1e';
-    ctx.beginPath();
-    ctx.ellipse(0, s * 0.32, s * 0.4, s * 0.12, 0, 0, TAU);
-    ctx.fill();
+    oval(ctx, 0, s * 0.32, s * 0.4, s * 0.12, '#ff9a1e');
     ctx.fillStyle = '#25262b';
     ctx.beginPath();
     ctx.arc(0, -s * 0.12, s * 0.42, 0.05, Math.PI - 0.05);
     ctx.fill();
     ctx.fillRect(s * 0.36, -s * 0.16, s * 0.3, s * 0.1);
   } else if (tool === 'steamer') {
-    ctx.fillStyle = '#c99a52';
-    ctx.beginPath();
-    ctx.roundRect(-s * 0.45, -s * 0.3, s * 0.9, s * 0.6, s * 0.15);
-    ctx.fill();
+    rrect(ctx, -s * 0.45, -s * 0.3, s * 0.9, s * 0.6, s * 0.15, '#c99a52');
     ctx.strokeStyle = '#7a5420';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -104,27 +89,14 @@ function drawTicket(ctx, order, x, y, t) {
   // Clip and string.
   ctx.fillStyle = '#c8a050';
   ctx.fillRect(TICKET_W / 2 - 8, -8, 16, 12);
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath();
-  ctx.roundRect(3, 4, TICKET_W, TICKET_H, 6);
-  ctx.fill();
-  ctx.fillStyle = urgent && Math.sin(t * 10) > 0 ? '#ffe2d8' : order.vip ? '#fff0b8' : '#fff4dc';
-  ctx.beginPath();
-  ctx.roundRect(0, 0, TICKET_W, TICKET_H, 6);
-  ctx.fill();
+  rrect(ctx, 3, 4, TICKET_W, TICKET_H, 6, 'rgba(0,0,0,0.35)');
+  rrect(ctx, 0, 0, TICKET_W, TICKET_H, 6, urgent && Math.sin(t * 10) > 0 ? '#ffe2d8' : order.vip ? '#fff0b8' : '#fff4dc');
   if (order.vip) {
     ctx.strokeStyle = '#d99a1e';
     ctx.lineWidth = 3;
     ctx.stroke();
-    ctx.fillStyle = '#c8302a';
-    ctx.beginPath();
-    ctx.roundRect(TICKET_W - 46, TICKET_H - 24, 40, 18, 9);
-    ctx.fill();
-    ctx.fillStyle = '#ffe9a0';
-    ctx.font = `bold 11px ${FONT}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('VIP x2', TICKET_W - 26, TICKET_H - 14.5);
+    rrect(ctx, TICKET_W - 46, TICKET_H - 24, 40, 18, 9, '#c8302a');
+    text(ctx, 'VIP x2', TICKET_W - 26, TICKET_H - 14.5, `bold 11px ${FONT}`, '#ffe9a0', 'center', 'middle');
   }
   // Patience bar.
   ctx.fillStyle = 'rgba(80,40,20,0.18)';
@@ -139,11 +111,7 @@ function drawTicket(ctx, order, x, y, t) {
     drawIngredient(ctx, { kind: 'item', ing, state }, 104, py, 24);
     routeTo(ing, state).forEach((tool, k) => drawToolIcon(ctx, tool, 130 + k * 20, py, 15));
   });
-  ctx.fillStyle = '#5a2a14';
-  ctx.font = `bold 13px ${FONT}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(recipe.short, 46, TICKET_H - 12);
+  text(ctx, recipe.short, 46, TICKET_H - 12, `bold 13px ${FONT}`, '#5a2a14', 'center', 'middle');
   if (order.outcome === 'served' || order.outcome === 'missed') {
     ctx.save();
     ctx.translate(TICKET_W / 2, TICKET_H / 2 + 4);
@@ -182,7 +150,7 @@ function drawRail(ctx, state, t) {
   ctx.fillStyle = 'rgba(255,240,200,0.4)';
   ctx.fillRect(RAIL_X, RAIL_Y - 6, 5 * (TICKET_W + 8) + 4, 1.5);
   const live = state.orders;
-  if (live.length === 0) {
+  if (live.length === 0 && !state.over) {
     ctx.fillStyle = 'rgba(255,230,190,0.5)';
     ctx.font = `italic 18px ${FONT}`;
     ctx.textAlign = 'left';
@@ -204,19 +172,10 @@ function drawClock(ctx, state, t) {
   const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, r + 26);
   glow.addColorStop(0, late ? 'rgba(255,90,60,0.5)' : 'rgba(255,170,70,0.45)');
   glow.addColorStop(1, 'rgba(255,150,60,0)');
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(0, 0, r + 26, 0, TAU);
-  ctx.fill();
+  circle(ctx, 0, 0, r + 26, glow);
   // Paper lantern body with ribs.
-  const body = ctx.createRadialGradient(-18, -20, 6, 0, 0, r);
-  body.addColorStop(0, '#ff8a5c');
-  body.addColorStop(0.6, '#d8392a');
-  body.addColorStop(1, '#8a1a14');
-  ctx.fillStyle = body;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, r, r * 0.95, 0, 0, TAU);
-  ctx.fill();
+  const body = radial(ctx, -18, -20, 6, 0, 0, r, ['#ff8a5c', '#d8392a', '#8a1a14']);
+  oval(ctx, 0, 0, r, r * 0.95, body);
   ctx.strokeStyle = 'rgba(90,15,10,0.45)';
   ctx.lineWidth = 2;
   for (let i = -2; i <= 2; i += 1) {
@@ -228,10 +187,7 @@ function drawClock(ctx, state, t) {
   ctx.fillRect(-22, -r * 0.95 - 6, 44, 10);
   ctx.fillRect(-22, r * 0.95 - 4, 44, 10);
   // Time-left dial.
-  ctx.fillStyle = 'rgba(40,8,4,0.55)';
-  ctx.beginPath();
-  ctx.arc(0, 0, r * 0.7, 0, TAU);
-  ctx.fill();
+  circle(ctx, 0, 0, r * 0.7, 'rgba(40,8,4,0.55)');
   ctx.strokeStyle = late ? '#ffcf5a' : '#fff1c8';
   ctx.lineWidth = 7;
   ctx.lineCap = 'round';
@@ -240,25 +196,15 @@ function drawClock(ctx, state, t) {
   ctx.stroke();
   ctx.lineCap = 'butt';
   const secs = Math.ceil(state.timeLeft);
-  const text = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+  const clock = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
   const pop = final ? 1 + 0.15 * Math.max(0, Math.sin(t * TAU)) : 1;
-  ctx.font = `bold ${Math.round(30 * pop)}px ${FONT}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = final ? '#ffe066' : '#fffaf0';
-  ctx.fillText(text, 0, 2);
+  text(ctx, clock, 0, 2, `bold ${Math.round(30 * pop)}px ${FONT}`, final ? '#ffe066' : '#fffaf0', 'center', 'middle');
   ctx.restore();
 }
 
 export function drawCoin(ctx, x, y, r) {
-  const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 1, x, y, r);
-  g.addColorStop(0, '#fff3b0');
-  g.addColorStop(0.6, '#f2b632');
-  g.addColorStop(1, '#a8700e');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, TAU);
-  ctx.fill();
+  const g = radial(ctx, x - r * 0.3, y - r * 0.3, 1, x, y, r, ['#fff3b0', '#f2b632', '#a8700e']);
+  circle(ctx, x, y, r, g);
   ctx.fillStyle = '#7a4e08';
   ctx.fillRect(x - r * 0.25, y - r * 0.25, r * 0.5, r * 0.5);
   ctx.fillStyle = '#ffe48a';
@@ -282,11 +228,7 @@ export function drawStar(ctx, x, y, r, filled) {
 
 function drawPurse(ctx, state, t) {
   const x = 1080;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#ffcf8a';
-  ctx.font = `bold 13px ${FONT}`;
-  ctx.fillText(`NIGHT ${state.nightIndex + 1}`, x, 20);
+  text(ctx, `NIGHT ${state.nightIndex + 1}`, x, 20, `bold 13px ${FONT}`, '#ffcf8a', 'left', 'middle');
   ctx.fillStyle = 'rgba(255,230,190,0.7)';
   ctx.font = `12px ${FONT}`;
   ctx.fillText(state.night.title, x + 62, 20);
@@ -303,26 +245,14 @@ function drawPurse(ctx, state, t) {
   const bx = x;
   const by = 80;
   const bw = 180;
-  ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  ctx.beginPath();
-  ctx.roundRect(bx, by, bw, 16, 8);
-  ctx.fill();
-  const rg = ctx.createLinearGradient(bx, 0, bx + bw, 0);
-  rg.addColorStop(0, '#ffd23e');
-  rg.addColorStop(0.6, '#ff8a1e');
-  rg.addColorStop(1, '#ff3b2f');
-  ctx.fillStyle = rg;
-  ctx.beginPath();
-  ctx.roundRect(bx + 2, by + 2, (bw - 4) * rush, 12, 6);
-  ctx.fill();
+  rrect(ctx, bx, by, bw, 16, 8, 'rgba(0,0,0,0.45)');
+  const rg = linear(ctx, bx, 0, bx + bw, 0, ['#ffd23e', '#ff8a1e', '#ff3b2f']);
+  rrect(ctx, bx + 2, by + 2, (bw - 4) * rush, 12, 6, rg);
   if (hour) {
     for (let i = 0; i < 6; i += 1) {
       const fx = bx + 12 + i * 30;
       const h = 8 + Math.sin(t * 16 + i * 2) * 4;
-      ctx.fillStyle = i % 2 ? '#ffcf3e' : '#ff7a1a';
-      ctx.beginPath();
-      ctx.ellipse(fx, by - 2, 4, h / 2, 0, 0, TAU);
-      ctx.fill();
+      oval(ctx, fx, by - 2, 4, h / 2, i % 2 ? '#ffcf3e' : '#ff7a1a');
     }
   }
   ctx.font = `bold 13px ${FONT}`;
@@ -347,11 +277,7 @@ export function drawBanner(ctx, banner) {
   ctx.fillStyle = '#e8b85a';
   ctx.fillRect(0, y - 52, VIEW_W, 3);
   ctx.fillRect(0, y + 49, VIEW_W, 3);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `bold 52px ${TITLE_FONT}`;
-  ctx.fillStyle = '#ffe9b0';
-  ctx.fillText(banner.text, VIEW_W / 2, y - 10);
+  text(ctx, banner.text, VIEW_W / 2, y - 10, `bold 52px ${TITLE_FONT}`, '#ffe9b0', 'center', 'middle');
   ctx.font = `18px ${FONT}`;
   ctx.fillStyle = '#ffcf8a';
   ctx.fillText(banner.sub, VIEW_W / 2, y + 30);
@@ -359,32 +285,22 @@ export function drawBanner(ctx, banner) {
 }
 
 /** The first night's coaching line, in a pill over the rug. */
-export function drawHint(ctx, text) {
-  if (!text) return;
+export function drawHint(ctx, hint) {
+  if (!hint) return;
   ctx.font = `bold 17px ${FONT}`;
-  const w = ctx.measureText(text).width + 56;
+  const w = ctx.measureText(hint).width + 56;
   const x = 528 - w / 2;
   const y = 588;
-  ctx.fillStyle = 'rgba(25,12,6,0.82)';
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, 40, 20);
-  ctx.fill();
+  rrect(ctx, x, y, w, 40, 20, 'rgba(25,12,6,0.82)');
   ctx.strokeStyle = '#e8b85a';
   ctx.lineWidth = 2;
   ctx.stroke();
-  ctx.fillStyle = '#ffd34e';
-  ctx.beginPath();
-  ctx.arc(x + 22, y + 20, 9, 0, TAU);
-  ctx.fill();
-  ctx.fillStyle = '#3a1a0a';
-  ctx.font = `bold 14px ${FONT}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('?', x + 22, y + 21);
+  circle(ctx, x + 22, y + 20, 9, '#ffd34e');
+  text(ctx, '?', x + 22, y + 21, `bold 14px ${FONT}`, '#3a1a0a', 'center', 'middle');
   ctx.fillStyle = '#fff2d8';
   ctx.font = `bold 17px ${FONT}`;
   ctx.textAlign = 'left';
-  ctx.fillText(text, x + 40, y + 21);
+  ctx.fillText(hint, x + 40, y + 21);
 }
 
 export function drawHud(ctx, state, t) {

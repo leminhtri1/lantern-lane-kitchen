@@ -2,32 +2,20 @@
 // garnish, so the food reads at a glance and looks worth serving. Sizes are in logical pixels;
 // `s` is the size of one ingredient, and plates are drawn around their contents.
 import { RECIPES } from './recipes.js';
+import { TAU, circle, linear, oval, radial, rrect } from './paint.js';
 
-const TAU = Math.PI * 2;
 
 function glossy(ctx, x, y, rx, ry, light, base, dark, rot = 0) {
-  const g = ctx.createRadialGradient(x - rx * 0.35, y - ry * 0.45, Math.max(1, Math.min(rx, ry) * 0.1), x, y, Math.max(rx, ry) * 1.1);
-  g.addColorStop(0, light);
-  g.addColorStop(0.55, base);
-  g.addColorStop(1, dark);
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.ellipse(x, y, rx, ry, rot, 0, TAU);
-  ctx.fill();
+  const g = radial(ctx, x - rx * 0.35, y - ry * 0.45, Math.max(1, Math.min(rx, ry) * 0.1), x, y, Math.max(rx, ry) * 1.1, [light, base, dark]);
+  oval(ctx, x, y, rx, ry, g, rot);
 }
 
 function shine(ctx, x, y, rx, ry, alpha = 0.55, rot = -0.5) {
-  ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-  ctx.beginPath();
-  ctx.ellipse(x, y, rx, ry, rot, 0, TAU);
-  ctx.fill();
+  oval(ctx, x, y, rx, ry, `rgba(255,255,255,${alpha})`, rot);
 }
 
 function shadow(ctx, x, y, rx, ry, alpha = 0.28) {
-  ctx.fillStyle = `rgba(20,8,4,${alpha})`;
-  ctx.beginPath();
-  ctx.ellipse(x, y, rx, ry, 0, 0, TAU);
-  ctx.fill();
+  oval(ctx, x, y, rx, ry, `rgba(20,8,4,${alpha})`);
 }
 
 /** A small deterministic scatter so piles look hand-made yet never flicker. */
@@ -112,14 +100,8 @@ function scallionRings(ctx, x, y, s, n = 10, seed = 5, spread = 0.5) {
   for (const [u, v] of scatter(n, seed)) {
     const px = x + (u - 0.5) * s * spread * 2;
     const py = y + (v - 0.5) * s * spread * 1.3;
-    ctx.fillStyle = v > 0.5 ? '#4cb43c' : '#7ad85e';
-    ctx.beginPath();
-    ctx.arc(px, py, s * 0.065, 0, TAU);
-    ctx.fill();
-    ctx.fillStyle = '#d9f5c4';
-    ctx.beginPath();
-    ctx.arc(px, py, s * 0.03, 0, TAU);
-    ctx.fill();
+    circle(ctx, px, py, s * 0.065, v > 0.5 ? '#4cb43c' : '#7ad85e');
+    circle(ctx, px, py, s * 0.03, '#d9f5c4');
   }
 }
 
@@ -129,10 +111,7 @@ function cabbageHead(ctx, x, y, s) {
     const a = -Math.PI / 2 + (i - 2) * 0.42;
     glossy(ctx, x + Math.cos(a) * s * 0.08, y + Math.sin(a) * s * 0.06, s * 0.15, s * 0.36, '#d8ffb8', '#7ccf55', '#3f8f2f', a + Math.PI / 2);
   }
-  ctx.fillStyle = '#f2f8e4';
-  ctx.beginPath();
-  ctx.ellipse(x, y + s * 0.2, s * 0.14, s * 0.12, 0, 0, TAU);
-  ctx.fill();
+  oval(ctx, x, y + s * 0.2, s * 0.14, s * 0.12, '#f2f8e4');
 }
 
 function cabbageLeaves(ctx, x, y, s, cooked) {
@@ -148,15 +127,9 @@ function cabbageLeaves(ctx, x, y, s, cooked) {
 
 function porkSlab(ctx, x, y, s) {
   shadow(ctx, x, y + s * 0.26, s * 0.4, s * 0.1);
-  ctx.fillStyle = '#c95b56';
-  ctx.beginPath();
-  ctx.roundRect(x - s * 0.38, y - s * 0.2, s * 0.76, s * 0.42, s * 0.12);
-  ctx.fill();
+  rrect(ctx, x - s * 0.38, y - s * 0.2, s * 0.76, s * 0.42, s * 0.12, '#c95b56');
   glossy(ctx, x, y - s * 0.02, s * 0.36, s * 0.17, '#ffb3a6', '#ef7f76', '#c95b56');
-  ctx.fillStyle = '#fff1e6';
-  ctx.beginPath();
-  ctx.roundRect(x - s * 0.38, y - s * 0.22, s * 0.76, s * 0.09, s * 0.05);
-  ctx.fill();
+  rrect(ctx, x - s * 0.38, y - s * 0.22, s * 0.76, s * 0.09, s * 0.05, '#fff1e6');
   ctx.strokeStyle = 'rgba(255,240,230,0.7)';
   ctx.lineWidth = s * 0.03;
   ctx.beginPath();
@@ -184,10 +157,7 @@ function chickenCubes(ctx, x, y, s) {
   for (const [u, v] of scatter(6, 13)) {
     const px = x + (u - 0.5) * s * 0.55;
     const py = y + (v - 0.5) * s * 0.35;
-    ctx.fillStyle = '#e8a48f';
-    ctx.beginPath();
-    ctx.roundRect(px - s * 0.1, py - s * 0.08, s * 0.2, s * 0.17, s * 0.04);
-    ctx.fill();
+    rrect(ctx, px - s * 0.1, py - s * 0.08, s * 0.2, s * 0.17, s * 0.04, '#e8a48f');
     ctx.fillStyle = '#ffd9c9';
     ctx.fillRect(px - s * 0.08, py - s * 0.07, s * 0.14, s * 0.06);
   }
@@ -234,10 +204,7 @@ function skewer(ctx, x, y, s, kind, angle = -0.35) {
 
 function mushroomCap(ctx, x, y, s) {
   shadow(ctx, x, y + s * 0.28, s * 0.32, s * 0.09);
-  ctx.fillStyle = '#efe2c8';
-  ctx.beginPath();
-  ctx.roundRect(x - s * 0.08, y - s * 0.02, s * 0.16, s * 0.3, s * 0.05);
-  ctx.fill();
+  rrect(ctx, x - s * 0.08, y - s * 0.02, s * 0.16, s * 0.3, s * 0.05, '#efe2c8');
   glossy(ctx, x, y - s * 0.06, s * 0.34, s * 0.2, '#c9946a', '#8a5532', '#4f2c15');
   ctx.fillStyle = 'rgba(255,235,210,0.55)';
   for (const [u, v] of scatter(4, 9)) {
@@ -360,15 +327,9 @@ function mango(ctx, x, y, s) {
   g.addColorStop(0.35, '#ffd23e');
   g.addColorStop(0.75, '#ff9a2a');
   g.addColorStop(1, '#e8562a');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.ellipse(x, y, s * 0.36, s * 0.26, -0.4, 0, TAU);
-  ctx.fill();
+  oval(ctx, x, y, s * 0.36, s * 0.26, g, -0.4);
   shine(ctx, x - s * 0.12, y - s * 0.1, s * 0.1, s * 0.04, 0.6);
-  ctx.fillStyle = '#3f9e36';
-  ctx.beginPath();
-  ctx.ellipse(x + s * 0.28, y - s * 0.2, s * 0.12, s * 0.05, -0.8, 0, TAU);
-  ctx.fill();
+  oval(ctx, x + s * 0.28, y - s * 0.2, s * 0.12, s * 0.05, '#3f9e36', -0.8);
 }
 
 function mangoSlices(ctx, x, y, s, fan = false) {
@@ -385,10 +346,7 @@ function mangoSlices(ctx, x, y, s, fan = false) {
       const [u, v] = scatter(n, 41)[i];
       const px = x + (u - 0.5) * s * 0.5;
       const py = y + (v - 0.5) * s * 0.35;
-      ctx.fillStyle = '#ffa726';
-      ctx.beginPath();
-      ctx.roundRect(px - s * 0.09, py - s * 0.08, s * 0.18, s * 0.16, s * 0.04);
-      ctx.fill();
+      rrect(ctx, px - s * 0.09, py - s * 0.08, s * 0.18, s * 0.16, s * 0.04, '#ffa726');
       ctx.fillStyle = '#ffe08a';
       ctx.fillRect(px - s * 0.07, py - s * 0.07, s * 0.1, s * 0.05);
     }
@@ -447,14 +405,8 @@ export function drawIngredient(ctx, item, x, y, s) {
 
 function plateBase(ctx, x, y, r) {
   shadow(ctx, x + r * 0.06, y + r * 0.18, r * 1.02, r * 0.62, 0.35);
-  const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
-  g.addColorStop(0, '#ffffff');
-  g.addColorStop(0.7, '#f1efe8');
-  g.addColorStop(1, '#cfcac0');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.ellipse(x, y, r, r * 0.7, 0, 0, TAU);
-  ctx.fill();
+  const g = radial(ctx, x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r, ['#ffffff', '#f1efe8', '#cfcac0']);
+  oval(ctx, x, y, r, r * 0.7, g);
   ctx.strokeStyle = '#2f7f8f';
   ctx.lineWidth = r * 0.06;
   ctx.beginPath();
@@ -467,19 +419,13 @@ function plateBase(ctx, x, y, r) {
     ctx.arc(x + Math.cos(a) * r * 0.93, y + Math.sin(a) * r * 0.65, r * 0.03, 0, TAU);
     ctx.fill();
   }
-  ctx.fillStyle = '#faf8f2';
-  ctx.beginPath();
-  ctx.ellipse(x, y, r * 0.78, r * 0.53, 0, 0, TAU);
-  ctx.fill();
+  oval(ctx, x, y, r * 0.78, r * 0.53, '#faf8f2');
 }
 
 function bowlBase(ctx, x, y, r, broth) {
   shadow(ctx, x + r * 0.05, y + r * 0.42, r * 1.0, r * 0.5, 0.35);
   // Outer glaze: deep red with a gold band, seen from above at a slant.
-  const g = ctx.createLinearGradient(x - r, y, x + r, y);
-  g.addColorStop(0, '#7d1d1a');
-  g.addColorStop(0.45, '#c8382c');
-  g.addColorStop(1, '#6a1614');
+  const g = linear(ctx, x - r, y, x + r, y, ['#7d1d1a', '#c8382c', '#6a1614']);
   ctx.fillStyle = g;
   ctx.beginPath();
   ctx.ellipse(x, y + r * 0.12, r, r * 0.78, 0, 0, Math.PI);
@@ -491,15 +437,9 @@ function bowlBase(ctx, x, y, r, broth) {
   ctx.beginPath();
   ctx.ellipse(x, y + r * 0.2, r * 0.94, r * 0.62, 0, 0.15, Math.PI - 0.15);
   ctx.stroke();
-  ctx.fillStyle = '#f7efe0';
-  ctx.beginPath();
-  ctx.ellipse(x, y, r, r * 0.62, 0, 0, TAU);
-  ctx.fill();
+  oval(ctx, x, y, r, r * 0.62, '#f7efe0');
   if (broth) {
-    const b = ctx.createRadialGradient(x - r * 0.2, y - r * 0.2, r * 0.05, x, y, r * 0.9);
-    b.addColorStop(0, '#ffd98a');
-    b.addColorStop(0.6, '#e8a33c');
-    b.addColorStop(1, '#b8701e');
+    const b = radial(ctx, x - r * 0.2, y - r * 0.2, r * 0.05, x, y, r * 0.9, ['#ffd98a', '#e8a33c', '#b8701e']);
     ctx.fillStyle = b;
   } else ctx.fillStyle = '#e9dcc6';
   ctx.beginPath();
@@ -542,9 +482,7 @@ function dumpling(ctx, x, y, s) {
   ctx.quadraticCurveTo(x + s * 0.3, y - s * 0.26, x + s * 0.32, y + s * 0.1);
   ctx.quadraticCurveTo(x, y + s * 0.22, x - s * 0.32, y + s * 0.1);
   ctx.fill();
-  const g = ctx.createRadialGradient(x - s * 0.1, y - s * 0.12, s * 0.02, x, y, s * 0.34);
-  g.addColorStop(0, 'rgba(255,255,255,0.9)');
-  g.addColorStop(1, 'rgba(220,200,165,0.2)');
+  const g = radial(ctx, x - s * 0.1, y - s * 0.12, s * 0.02, x, y, s * 0.34, ['rgba(255,255,255,0.9)', 'rgba(220,200,165,0.2)']);
   ctx.fillStyle = g;
   ctx.fill();
   ctx.strokeStyle = 'rgba(180,150,110,0.9)';
@@ -555,10 +493,7 @@ function dumpling(ctx, x, y, s) {
     ctx.quadraticCurveTo(x + i * s * 0.1, y - s * 0.14, x + i * s * 0.07, y - s * 0.06);
     ctx.stroke();
   }
-  ctx.fillStyle = 'rgba(120,190,90,0.45)';
-  ctx.beginPath();
-  ctx.ellipse(x, y + s * 0.02, s * 0.12, s * 0.05, 0, 0, TAU);
-  ctx.fill();
+  oval(ctx, x, y + s * 0.02, s * 0.12, s * 0.05, 'rgba(120,190,90,0.45)');
 }
 
 function sesame(ctx, x, y, r, seed) {

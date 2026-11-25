@@ -3,8 +3,8 @@
 import { FONT, GRID_Y, STREET_X } from './config.js';
 import { drawIngredient, drawPlated, drawDish } from './food-art.js';
 import { plateKeys } from './recipes.js';
+import { TAU, circle, oval, rrect } from './paint.js';
 
-const TAU = Math.PI * 2;
 
 function drawHeld(ctx, held, x, y, t) {
   if (!held) return;
@@ -19,10 +19,7 @@ export function drawCook(ctx, player, t) {
   const hx = x + fx * 26;
   const hy = y - 4 + fy * 16;
   const behind = fy < -0.4;
-  ctx.fillStyle = 'rgba(10,4,2,0.4)';
-  ctx.beginPath();
-  ctx.ellipse(x, y + 22, 24, 10, 0, 0, TAU);
-  ctx.fill();
+  oval(ctx, x, y + 22, 24, 10, 'rgba(10,4,2,0.4)');
   // Feet.
   const step = player.moving ? Math.sin(player.walk) * 5 : 0;
   ctx.fillStyle = '#2a1a14';
@@ -37,17 +34,11 @@ export function drawCook(ctx, player, t) {
   const g = ctx.createLinearGradient(x - 22, by - 16, x + 22, by + 20);
   g.addColorStop(0, '#2a9a9e');
   g.addColorStop(1, '#16585e');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.roundRect(x - 21, by - 18, 42, 38, 14);
-  ctx.fill();
+  rrect(ctx, x - 21, by - 18, 42, 38, 14, g);
   ctx.fillStyle = '#ff9a3c';
   ctx.fillRect(x - 21, by + 10, 42, 4);
   if (!behind) {
-    ctx.fillStyle = '#fbf3e2';
-    ctx.beginPath();
-    ctx.roundRect(x - 12, by - 8, 24, 26, 6);
-    ctx.fill();
+    rrect(ctx, x - 12, by - 8, 24, 26, 6, '#fbf3e2');
   }
   // Arms reaching toward what the cook faces.
   const swing = chopping ? Math.sin(t * 38) * 8 : 0;
@@ -67,10 +58,7 @@ export function drawCook(ctx, player, t) {
   ctx.fill();
   // Head: hair, headband with tails that flutter while walking.
   const hy0 = by - 28;
-  ctx.fillStyle = '#f1c08a';
-  ctx.beginPath();
-  ctx.arc(x, hy0, 17, 0, TAU);
-  ctx.fill();
+  circle(ctx, x, hy0, 17, '#f1c08a');
   ctx.fillStyle = '#2b1a12';
   ctx.beginPath();
   if (behind) ctx.arc(x, hy0, 17.5, 0, TAU);
@@ -118,14 +106,8 @@ function drawCustomer(ctx, order, x, y, t) {
   const cx = x + dx;
   const sway = Math.sin(t * 2 + order.id) * 2;
   ctx.globalAlpha = alpha;
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath();
-  ctx.ellipse(cx, y + 26, 22, 8, 0, 0, TAU);
-  ctx.fill();
-  ctx.fillStyle = COATS[order.customer % COATS.length];
-  ctx.beginPath();
-  ctx.roundRect(cx - 20, y - 6 + sway * 0.3, 40, 34, 14);
-  ctx.fill();
+  oval(ctx, cx, y + 26, 22, 8, 'rgba(0,0,0,0.35)');
+  rrect(ctx, cx - 20, y - 6 + sway * 0.3, 40, 34, 14, COATS[order.customer % COATS.length]);
   ctx.fillStyle = '#f0c49a';
   if (order.customer % 3 === 1) ctx.fillStyle = '#c99068';
   if (order.customer % 3 === 2) ctx.fillStyle = '#8d5a3c';

@@ -2,8 +2,8 @@
 // at the fair, rain on the awnings, fireworks over the harbour, and a full moon over the market.
 // Drawn from the shift clock alone, so screenshot scenes stay repeatable.
 import { GRID_Y, STREET_X, VIEW_H, VIEW_W } from './config.js';
+import { TAU, circle, radial } from './paint.js';
 
-const TAU = Math.PI * 2;
 const W = VIEW_W - STREET_X;
 
 function rain(ctx, t) {
@@ -38,10 +38,7 @@ function fireworks(ctx, t) {
     const colors = ['#ffd166', '#ff6b9a', '#7ee0ff', '#b4ff7a'];
     const color = colors[(n + i) % colors.length];
     if (k < 0.25) {
-      ctx.fillStyle = '#fff4c0';
-      ctx.beginPath();
-      ctx.arc(x, y + (0.25 - k) * 600, 2.5, 0, TAU);
-      ctx.fill();
+      circle(ctx, x, y + (0.25 - k) * 600, 2.5, '#fff4c0');
       continue;
     }
     const r = (k - 0.25) * 90;
@@ -61,9 +58,7 @@ function skyLanterns(ctx, t) {
   for (let i = 0; i < 6; i += 1) {
     const y = VIEW_H - ((t * 26 + i * 120) % (VIEW_H - GRID_Y + 40));
     const x = STREET_X + 20 + ((i * 37) % (W - 40)) + Math.sin(t + i) * 6;
-    const glow = ctx.createRadialGradient(x, y, 1, x, y, 22);
-    glow.addColorStop(0, 'rgba(255,190,90,0.6)');
-    glow.addColorStop(1, 'rgba(255,190,90,0)');
+    const glow = radial(ctx, x, y, 1, x, y, 22, ['rgba(255,190,90,0.6)', 'rgba(255,190,90,0)']);
     ctx.fillStyle = glow;
     ctx.fillRect(x - 22, y - 22, 44, 44);
     ctx.fillStyle = '#ffb75e';
@@ -80,15 +75,10 @@ function skyLanterns(ctx, t) {
 function moon(ctx, t) {
   const x = STREET_X + W / 2;
   const y = GRID_Y + 60;
-  const glow = ctx.createRadialGradient(x, y, 10, x, y, 90);
-  glow.addColorStop(0, 'rgba(255,245,210,0.5)');
-  glow.addColorStop(1, 'rgba(255,245,210,0)');
+  const glow = radial(ctx, x, y, 10, x, y, 90, ['rgba(255,245,210,0.5)', 'rgba(255,245,210,0)']);
   ctx.fillStyle = glow;
   ctx.fillRect(x - 90, y - 90, 180, 180);
-  ctx.fillStyle = '#fff6d8';
-  ctx.beginPath();
-  ctx.arc(x, y, 30, 0, TAU);
-  ctx.fill();
+  circle(ctx, x, y, 30, '#fff6d8');
   ctx.fillStyle = 'rgba(220,205,170,0.6)';
   ctx.beginPath();
   ctx.arc(x - 9, y - 6, 6, 0, TAU);
