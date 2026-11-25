@@ -1,4 +1,4 @@
-// Lantern Lane Kitchen's hand-in (Node 22, standard library only). The game is this directory's
+// Kite Street Night Market's hand-in (Node 22, standard library only). The game is this directory's
 // game/ folder: plain static files a desktop browser loads offline (game/index.html and its ES
 // modules, no library, no build step and no network request). This program copies game/ and
 // screenshots/ from beside this file to /output and writes /output/dossier.json, the summary the

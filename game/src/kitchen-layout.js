@@ -4,13 +4,13 @@
 import { COLS, GRID_X, GRID_Y, ROWS, TILE } from './config.js';
 
 const MAP = [
-  'XPPCWWCSSGGX',
-  'n..........C',
-  'e..........O',
-  's..CBCCCD..O',
-  'c..........C',
-  'p..........D',
-  'XkmhrbgBCBTX',
+	'XPPCWWCSSGGX',
+	'n..........C',
+	'e..........O',
+	's..CBCCCD..O',
+	'c..........C',
+	'p..........D',
+	'XkmhrbgBCBTX',
 ];
 
 const CRATES = { n: 'noodles', e: 'egg', s: 'scallion', c: 'cabbage', p: 'pork', k: 'chicken', m: 'mushroom', h: 'shrimp', r: 'rice', b: 'bun', g: 'mango' };
@@ -19,53 +19,52 @@ const TYPES = { X: 'decor', C: 'counter', B: 'board', P: 'pot', W: 'wok', S: 'st
 export const COOK_TYPES = ['pot', 'wok', 'steamer', 'grill'];
 
 export function isCookStation(station) {
-  return COOK_TYPES.includes(station.type);
+	return COOK_TYPES.includes(station.type);
 }
 
-/** A fresh kitchen: every station empty, in grid order. */
 export function createKitchen() {
-  const stations = [];
-  const grid = [];
-  for (let r = 0; r < ROWS; r += 1) {
-    const row = [];
-    for (let c = 0; c < COLS; c += 1) {
-      const ch = MAP[r][c];
-      if (ch === '.') {
-        row.push(null);
-        continue;
-      }
-      const station = {
-        id: stations.length,
-        c,
-        r,
-        type: CRATES[ch] ? 'crate' : TYPES[ch],
-        ing: CRATES[ch] ?? null,
-        held: null,
-        items: [],
-        warned: false,
-      };
-      stations.push(station);
-      row.push(station);
-    }
-    grid.push(row);
-  }
-  return { stations, grid };
+	const stations = [];
+	const grid = [];
+	for (let r = 0; r < ROWS; r += 1) {
+		const row = [];
+		for (let c = 0; c < COLS; c += 1) {
+			const ch = MAP[r][c];
+			if (ch === '.') {
+				row.push(null);
+				continue;
+			}
+			const station = {
+				id: stations.length,
+				c,
+				r,
+				type: CRATES[ch] ? 'crate' : TYPES[ch],
+				ing: CRATES[ch] ?? null,
+				held: null,
+				items: [],
+				warned: false,
+			};
+			stations.push(station);
+			row.push(station);
+		}
+		grid.push(row);
+	}
+	return { stations, grid };
 }
 
 export function tileCenter(c, r) {
-  return { x: GRID_X + c * TILE + TILE / 2, y: GRID_Y + r * TILE + TILE / 2 };
+	return { x: GRID_X + c * TILE + TILE / 2, y: GRID_Y + r * TILE + TILE / 2 };
 }
 
 export function tileAt(x, y) {
-  return { c: Math.floor((x - GRID_X) / TILE), r: Math.floor((y - GRID_Y) / TILE) };
+	return { c: Math.floor((x - GRID_X) / TILE), r: Math.floor((y - GRID_Y) / TILE) };
 }
 
 export function stationAt(kitchen, c, r) {
-  if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return null;
-  return kitchen.grid[r][c];
+	if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return null;
+	return kitchen.grid[r][c];
 }
 
 export function isFloor(kitchen, c, r) {
-  return c >= 0 && r >= 0 && c < COLS && r < ROWS && kitchen.grid[r][c] === null;
+	return c >= 0 && r >= 0 && c < COLS && r < ROWS && kitchen.grid[r][c] === null;
 }
 
